@@ -95,27 +95,3 @@ models:
       max_length: 64
       padding: true
       truncation: true
-
-  clip:
-    name: "OpenAI CLIP ViT-B/16"
-    type: "multimodal"
-    huggingface_id: "openai/clip-vit-base-patch16"
-    max_seq_length: 77
-    embedding_dim: 512
-    image_size: 224
-    params: "~150M"
-    modalities: ["text", "image"]
-    description: "OpenAI's foundational vision-language model"
-
-    paths:
-      pytorch: "/models/clip/pytorch"
-      onnx_text: "/models/clip/onnx/text_encoder.onnx"
-      onnx_image: "/models/clip/onnx/image_encoder.onnx"
-      openvino_text: "/models/clip/openvino/text"
-      openvino_image: "/models/clip/openvino/image"
-
-    tokenizer:
-      huggingface_id: "openai/clip-vit-base-patch16"
-      max_length: 77
-      padding: true
-      truncation: true
