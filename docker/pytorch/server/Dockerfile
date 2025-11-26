@@ -3,11 +3,15 @@ FROM python:3.11-slim
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python packages
+# Install PyTorch first with CPU-only index
+RUN pip install --no-cache-dir torch==2.2.0 --index-url https://download.pytorch.org/whl/cpu
+
+# Install other packages from PyPI
 RUN pip install --no-cache-dir \
-    torch==2.2.0 --index-url https://download.pytorch.org/whl/cpu \
     transformers==4.38.0 \
     sentence-transformers==2.5.1 \
     tokenizers==0.15.2 \

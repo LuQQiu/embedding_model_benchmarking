@@ -245,15 +245,41 @@ Once connected to the instance:
 git clone https://github.com/LuQQiu/embedding_model_benchmarking.git
 cd embedding_model_benchmarking
 
-# Run setup script
+# Run comprehensive setup script
 bash scripts/setup.sh
 
-# This will:
-# - Create directories
-# - Install Python dependencies
+# This single script will:
+# - Upgrade pip and install build tools
+# - Install PyTorch (CPU version)
+# - Install all ML dependencies (sentence-transformers, transformers, etc.)
+# - Install HuggingFace CLI
+# - Configure PATH for CLI tools
+# - Install Claude Code CLI
 # - Pull Docker base images
-# - Verify Docker is working
+# - Verify all installations
+
+# After setup completes, refresh your shell
+source ~/.bashrc
 ```
+
+**Expected time**: 5-10 minutes
+
+### Step 11: Authenticate with HuggingFace
+
+For gated models like EmbeddingGemma:
+
+```bash
+# Use the helper script
+bash scripts/huggingface_login.sh
+
+# Or manually
+huggingface-cli login
+# Paste your token when prompted
+```
+
+**Get your token**: https://huggingface.co/settings/tokens
+
+**For EmbeddingGemma**: Visit https://huggingface.co/google/embeddinggemma-300m and click "Agree and access repository"
 
 ## Troubleshooting
 

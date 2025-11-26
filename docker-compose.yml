@@ -2,9 +2,10 @@ version: '3.8'
 
 # Client-Server Architecture for Embedding Model Benchmarking
 # Each framework has:
-#   - Server: 16 vCPU, 32GB RAM (model inference)
-#   - Client: 16 vCPU, 32GB RAM (benchmarking logic)
+#   - Server: 16 vCPU, 32GB RAM (model inference - heavy workload)
+#   - Client: 14 vCPU, 16GB RAM (benchmark client - lighter workload)
 # Total instance: c7i.8xlarge (32 vCPU, 64GB RAM)
+# Allocation: 30 vCPUs, 48GB RAM used | 2 vCPUs, 16GB RAM for OS
 
 services:
   # ============================================================================
@@ -56,8 +57,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '16'
-          memory: 32G
+          cpus: '14'
+          memory: 16G
 
   # ============================================================================
   # ONNX Runtime Python
@@ -109,8 +110,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '16'
-          memory: 32G
+          cpus: '14'
+          memory: 16G
 
   # ============================================================================
   # OpenVINO
@@ -161,8 +162,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '16'
-          memory: 32G
+          cpus: '14'
+          memory: 16G
 
   # ============================================================================
   # ONNX Runtime Rust (placeholder for future implementation)
@@ -184,7 +185,7 @@ services:
   #   deploy:
   #     resources:
   #       limits:
-  #         cpus: '16'
+  #         cpus: '14'
   #         memory: 32G
   #   healthcheck:
   #     test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
@@ -213,7 +214,7 @@ services:
   #   deploy:
   #     resources:
   #       limits:
-  #         cpus: '16'
+  #         cpus: '14'
   #         memory: 32G
 
   # ============================================================================
@@ -236,7 +237,7 @@ services:
   #   deploy:
   #     resources:
   #       limits:
-  #         cpus: '16'
+  #         cpus: '14'
   #         memory: 32G
   #   healthcheck:
   #     test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
@@ -265,7 +266,7 @@ services:
   #   deploy:
   #     resources:
   #       limits:
-  #         cpus: '16'
+  #         cpus: '14'
   #         memory: 32G
 
   # ============================================================================
@@ -288,7 +289,7 @@ services:
   #   deploy:
   #     resources:
   #       limits:
-  #         cpus: '16'
+  #         cpus: '14'
   #         memory: 32G
   #   healthcheck:
   #     test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
@@ -317,7 +318,7 @@ services:
   #   deploy:
   #     resources:
   #       limits:
-  #         cpus: '16'
+  #         cpus: '14'
   #         memory: 32G
 
 networks:

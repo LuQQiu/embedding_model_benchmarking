@@ -50,11 +50,17 @@ scenarios:
     batch_size: 1
     description: "Concurrency 8"
 
-  - name: "concurrency_16"
-    concurrency: 16
+  - name: "concurrency_12"
+    concurrency: 12
     num_requests: 10000
     batch_size: 1
-    description: "Concurrency 16"
+    description: "Concurrency 12"
+
+  - name: "concurrency_16"
+    concurrency: 16
+    num_requests: 12000
+    batch_size: 1
+    description: "Concurrency 16 - full load test"
 
 # Metrics to collect
 metrics:

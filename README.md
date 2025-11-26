@@ -55,6 +55,8 @@ Starting with **EmbeddingGemma 300M**, expandable to:
 
 ## Quick Start
 
+**New to the project?** See [QUICK_START.md](QUICK_START.md) for a streamlined setup guide.
+
 ### 1. Provision Infrastructure
 
 ```bash
@@ -74,6 +76,8 @@ export INSTANCE_IP=$(terraform output -raw instance_public_ip)
 echo "Instance IP: $INSTANCE_IP"
 ```
 
+See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed deployment instructions.
+
 ### 2. Connect to Instance
 
 ```bash
@@ -88,22 +92,48 @@ cd embedding_model_benchmarking
 ### 3. Setup Environment
 
 ```bash
-# Run setup script
+# Run comprehensive setup script (installs everything)
 bash scripts/setup.sh
 
-# This installs Docker, Docker Compose, and dependencies
+# Refresh shell
+source ~/.bashrc
 ```
 
-### 4. Download Model
+This installs:
+- All Python dependencies (PyTorch, transformers, sentence-transformers, etc.)
+- HuggingFace CLI
+- Claude Code CLI
+- Docker dependencies
+
+**Time**: ~5-10 minutes
+
+### 4. Authenticate with HuggingFace
+
+For gated models like EmbeddingGemma:
 
 ```bash
-# Download EmbeddingGemma 300M
-python3 scripts/download_model.py --model embeddinggemma-300m
+# Use helper script
+bash scripts/huggingface_login.sh
 
-# Model is saved to models/embeddinggemma-300m/pytorch/
+# Or manually
+huggingface-cli login
 ```
 
-### 5. Build Docker Containers
+Get your token from: https://huggingface.co/settings/tokens
+
+### 5. Download Model
+
+```bash
+# Download EmbeddingGemma 300M (requires HuggingFace auth)
+python3 scripts/download_model.py --model embeddinggemma-300m
+
+# Or use a public model (no auth required)
+python3 scripts/download_model.py --model bge-small-en
+
+# Model is saved to models/{model-name}/pytorch/
+```
+
+### 6. Build Docker Containers
 
 ```bash
 # Build all framework containers
@@ -113,7 +143,7 @@ docker-compose build
 docker-compose build pytorch
 ```
 
-### 6. Run Benchmarks
+### 7. Run Benchmarks
 
 ```bash
 # Run a single framework (for testing)
@@ -125,7 +155,7 @@ python3 orchestrator/runner.py --model embeddinggemma-300m
 # Results are saved to results/embeddinggemma-300m/
 ```
 
-### 7. View Results
+### 8. View Results
 
 ```bash
 # Print summary
