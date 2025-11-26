@@ -8,7 +8,8 @@ RUN apt-get update && apt-get install -y \
 
 # Install Python packages
 # Install PyTorch first with CPU-only index
-RUN pip install --no-cache-dir torch==2.2.0 --index-url https://download.pytorch.org/whl/cpu
+# Using PyTorch 2.6+ for EmbeddingGemma compatibility (requires or_mask_function/and_mask_function)
+RUN pip install --no-cache-dir torch==2.6.0 --index-url https://download.pytorch.org/whl/cpu
 
 # Install other packages from PyPI
 RUN pip install --no-cache-dir \
