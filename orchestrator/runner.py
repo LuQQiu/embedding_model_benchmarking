@@ -112,9 +112,8 @@ class BenchmarkOrchestrator:
                 if health_status == "healthy":
                     print(f"  ✓ Server is healthy")
                     return True
-                elif health_status == "unhealthy":
-                    print(f"  ✗ Server is unhealthy")
-                    return False
+                # Don't fail immediately on "unhealthy" - could be during start_period
+                # Only fail if we timeout
 
             except subprocess.CalledProcessError:
                 pass
