@@ -71,6 +71,28 @@ models:
       padding: true
       truncation: true
 
+  bge-small-en:
+    name: "BGE Small English"
+    type: "text_embedding"
+    huggingface_id: "BAAI/bge-small-en-v1.5"
+    max_seq_length: 512
+    embedding_dim: 384
+    params: "33.4M"
+    multilingual: false
+    description: "Fast and efficient English embedding model (public, no gating)"
+
+    paths:
+      pytorch: "/models/bge-small-en/pytorch"
+      onnx: "/models/bge-small-en/onnx/model.onnx"
+      onnx_optimized: "/models/bge-small-en/onnx/model_optimized.onnx"
+      openvino: "/models/bge-small-en/openvino"
+
+    tokenizer:
+      huggingface_id: "BAAI/bge-small-en-v1.5"
+      max_length: 512
+      padding: true
+      truncation: true
+
   # Multimodal Embedding Models
   siglip:
     name: "SigLIP Base"
