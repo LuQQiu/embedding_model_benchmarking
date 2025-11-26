@@ -113,9 +113,16 @@ def main():
 
     model_config = models_config['models'][args.model]
 
-    # Paths
+    # Paths - handle both container paths (/models/...) and local paths (models/...)
     onnx_path = Path(model_config['paths']['onnx'])
     openvino_dir = Path(model_config['paths']['openvino'])
+
+    # If container path doesn't exist, try local path
+    if not onnx_path.exists():
+        local_onnx_path = Path(f"models/{args.model}/onnx/model.onnx")
+        if local_onnx_path.exists():
+            onnx_path = local_onnx_path
+            openvino_dir = Path(f"models/{args.model}/openvino")
 
     convert_to_openvino(
         onnx_path=onnx_path,

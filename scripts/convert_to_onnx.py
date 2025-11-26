@@ -8,42 +8,65 @@ import yaml
 import torch
 import onnx
 from pathlib import Path
-from sentence_transformers import SentenceTransformer
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, AutoModel
+
+# Try to import optimum for better ONNX export support
+try:
+    from optimum.onnxruntime import ORTModelForFeatureExtraction
+    from optimum.exporters.onnx import main_export
+    HAS_OPTIMUM = True
+except ImportError:
+    HAS_OPTIMUM = False
+    print("Warning: optimum not installed. Install with: pip install optimum[onnxruntime]")
 
 
-def export_to_onnx(
+def export_with_optimum(
     model_id: str,
-    pytorch_model_path: Path,
+    onnx_output_path: Path,
+    opset_version: int = 14
+):
+    """
+    Export using Hugging Face Optimum (handles complex models like Gemma better)
+    """
+    print(f"Exporting with Optimum: {model_id}")
+
+    output_dir = onnx_output_path.parent
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Use optimum's export which handles model-specific quirks
+    main_export(
+        model_name_or_path=model_id,
+        output=output_dir,
+        task="feature-extraction",
+        opset=opset_version,
+        device="cpu",
+        fp16=False,
+    )
+
+    # Optimum exports to model.onnx by default
+    exported_path = output_dir / "model.onnx"
+    if exported_path.exists() and exported_path != onnx_output_path:
+        exported_path.rename(onnx_output_path)
+
+    print(f"Export successful: {onnx_output_path}")
+    print(f"Model size: {onnx_output_path.stat().st_size / 1024 / 1024:.2f} MB")
+
+
+def export_with_torch(
+    model_id: str,
     onnx_output_path: Path,
     max_seq_length: int = 512,
     opset_version: int = 14
 ):
     """
-    Export a sentence-transformers model to ONNX format
-
-    Args:
-        model_id: HuggingFace model ID
-        pytorch_model_path: Path to saved PyTorch model
-        onnx_output_path: Output path for ONNX model
-        max_seq_length: Maximum sequence length for input
-        opset_version: ONNX opset version
+    Export using torch.onnx.export (fallback for simpler models)
     """
-    print(f"Loading PyTorch model from: {pytorch_model_path}")
+    print(f"Loading model from HuggingFace: {model_id}")
 
-    # Load the model
-    if pytorch_model_path.exists():
-        model = SentenceTransformer(str(pytorch_model_path))
-    else:
-        print(f"PyTorch model not found, downloading from HuggingFace: {model_id}")
-        model = SentenceTransformer(model_id)
+    model = AutoModel.from_pretrained(model_id, trust_remote_code=True)
+    tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
 
-    # Get the underlying transformer model
-    transformer = model[0].auto_model
-    tokenizer = AutoTokenizer.from_pretrained(model_id)
-
-    # Set to evaluation mode
-    transformer.eval()
+    model.eval()
 
     # Create dummy input
     dummy_text = "This is a sample sentence for ONNX export."
@@ -72,10 +95,9 @@ def export_to_onnx(
     print(f"  Max sequence length: {max_seq_length}")
     print(f"  Opset version: {opset_version}")
 
-    # Export to ONNX
     with torch.no_grad():
         torch.onnx.export(
-            transformer,
+            model,
             (inputs["input_ids"], inputs["attention_mask"]),
             str(onnx_output_path),
             input_names=input_names,
@@ -84,7 +106,7 @@ def export_to_onnx(
             opset_version=opset_version,
             do_constant_folding=True,
             export_params=True,
-            verbose=False
+            verbose=False,
         )
 
     # Verify the ONNX model
@@ -96,10 +118,37 @@ def export_to_onnx(
     tokenizer_path = onnx_output_path.parent
     tokenizer.save_pretrained(str(tokenizer_path))
 
-    print(f"✓ ONNX export successful!")
+    print(f"ONNX export successful!")
     print(f"  Model: {onnx_output_path}")
     print(f"  Tokenizer: {tokenizer_path}")
     print(f"  Model size: {onnx_output_path.stat().st_size / 1024 / 1024:.2f} MB")
+
+
+def export_to_onnx(
+    model_id: str,
+    pytorch_model_path: Path,
+    onnx_output_path: Path,
+    max_seq_length: int = 512,
+    opset_version: int = 14,
+    use_optimum: bool = True
+):
+    """
+    Export a model to ONNX format
+
+    Args:
+        model_id: HuggingFace model ID
+        pytorch_model_path: Path to saved PyTorch model (unused with optimum)
+        onnx_output_path: Output path for ONNX model
+        max_seq_length: Maximum sequence length for input
+        opset_version: ONNX opset version
+        use_optimum: Use Hugging Face Optimum for export (recommended)
+    """
+    if use_optimum and HAS_OPTIMUM:
+        export_with_optimum(model_id, onnx_output_path, opset_version)
+    else:
+        if use_optimum and not HAS_OPTIMUM:
+            print("Optimum not available, falling back to torch.onnx.export")
+        export_with_torch(model_id, onnx_output_path, max_seq_length, opset_version)
 
 
 def main():
@@ -121,6 +170,11 @@ def main():
         type=int,
         default=14,
         help='ONNX opset version (default: 14)'
+    )
+    parser.add_argument(
+        '--no-optimum',
+        action='store_true',
+        help='Disable Optimum export, use torch.onnx.export instead'
     )
 
     args = parser.parse_args()
@@ -146,7 +200,8 @@ def main():
         pytorch_model_path=pytorch_path,
         onnx_output_path=onnx_path,
         max_seq_length=max_seq_length,
-        opset_version=args.opset_version
+        opset_version=args.opset_version,
+        use_optimum=not args.no_optimum
     )
 
 
