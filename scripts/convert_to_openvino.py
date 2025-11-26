@@ -52,7 +52,15 @@ def convert_to_openvino(
     }
 
     print("\nRunning OpenVINO Model Optimizer...")
-    mo.convert_model(**mo_args)
+    model = mo.convert_model(**mo_args)
+
+    # Save the model
+    from openvino.runtime import serialize
+    model_xml = openvino_output_dir / "model.xml"
+    model_bin = openvino_output_dir / "model.bin"
+    serialize(model, str(model_xml))
+    print(f"✓ Model saved: {model_xml}")
+    print(f"✓ Weights saved: {model_bin}")
 
     # Copy tokenizer from ONNX directory
     onnx_dir = onnx_path.parent
