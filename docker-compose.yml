@@ -1,0 +1,339 @@
+version: '3.8'
+
+# Client-Server Architecture for Embedding Model Benchmarking
+# Each framework has:
+#   - Server: 16 vCPU, 32GB RAM (model inference)
+#   - Client: 16 vCPU, 32GB RAM (benchmarking logic)
+# Total instance: c7i.8xlarge (32 vCPU, 64GB RAM)
+
+services:
+  # ============================================================================
+  # PyTorch
+  # ============================================================================
+  pytorch-server:
+    build:
+      context: .
+      dockerfile: docker/pytorch/server/Dockerfile
+    container_name: pytorch-server
+    volumes:
+      - ./models:/models:ro
+      - ./config:/config:ro
+    environment:
+      - MODEL_NAME=${MODEL_NAME:-embeddinggemma-300m}
+    ports:
+      - "8000:8000"
+    networks:
+      - pytorch-net
+    deploy:
+      resources:
+        limits:
+          cpus: '16'
+          memory: 32G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 30s
+
+  pytorch-client:
+    build:
+      context: .
+      dockerfile: docker/benchmark_client/Dockerfile
+    container_name: pytorch-client
+    volumes:
+      - ./results:/results
+      - ./config:/config:ro
+    environment:
+      - FRAMEWORK=pytorch
+      - MODEL_NAME=${MODEL_NAME:-embeddinggemma-300m}
+      - SERVER_URL=http://pytorch-server:8000
+    depends_on:
+      pytorch-server:
+        condition: service_healthy
+    networks:
+      - pytorch-net
+    deploy:
+      resources:
+        limits:
+          cpus: '16'
+          memory: 32G
+
+  # ============================================================================
+  # ONNX Runtime Python
+  # ============================================================================
+  onnx-python-server:
+    build:
+      context: .
+      dockerfile: docker/onnx_python/server/Dockerfile
+    container_name: onnx-python-server
+    volumes:
+      - ./models:/models:ro
+      - ./config:/config:ro
+    environment:
+      - MODEL_NAME=${MODEL_NAME:-embeddinggemma-300m}
+      - ORT_NUM_THREADS=16
+    ports:
+      - "8001:8000"
+    networks:
+      - onnx-python-net
+    deploy:
+      resources:
+        limits:
+          cpus: '16'
+          memory: 32G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 30s
+
+  onnx-python-client:
+    build:
+      context: .
+      dockerfile: docker/benchmark_client/Dockerfile
+    container_name: onnx-python-client
+    volumes:
+      - ./results:/results
+      - ./config:/config:ro
+    environment:
+      - FRAMEWORK=onnx-python
+      - MODEL_NAME=${MODEL_NAME:-embeddinggemma-300m}
+      - SERVER_URL=http://onnx-python-server:8000
+    depends_on:
+      onnx-python-server:
+        condition: service_healthy
+    networks:
+      - onnx-python-net
+    deploy:
+      resources:
+        limits:
+          cpus: '16'
+          memory: 32G
+
+  # ============================================================================
+  # OpenVINO
+  # ============================================================================
+  openvino-server:
+    build:
+      context: .
+      dockerfile: docker/openvino/server/Dockerfile
+    container_name: openvino-server
+    volumes:
+      - ./models:/models:ro
+      - ./config:/config:ro
+    environment:
+      - MODEL_NAME=${MODEL_NAME:-embeddinggemma-300m}
+    ports:
+      - "8002:8000"
+    networks:
+      - openvino-net
+    deploy:
+      resources:
+        limits:
+          cpus: '16'
+          memory: 32G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 30s
+
+  openvino-client:
+    build:
+      context: .
+      dockerfile: docker/benchmark_client/Dockerfile
+    container_name: openvino-client
+    volumes:
+      - ./results:/results
+      - ./config:/config:ro
+    environment:
+      - FRAMEWORK=openvino
+      - MODEL_NAME=${MODEL_NAME:-embeddinggemma-300m}
+      - SERVER_URL=http://openvino-server:8000
+    depends_on:
+      openvino-server:
+        condition: service_healthy
+    networks:
+      - openvino-net
+    deploy:
+      resources:
+        limits:
+          cpus: '16'
+          memory: 32G
+
+  # ============================================================================
+  # ONNX Runtime Rust (placeholder for future implementation)
+  # ============================================================================
+  # onnx-rust-server:
+  #   build:
+  #     context: .
+  #     dockerfile: docker/onnx_rust/server/Dockerfile
+  #   container_name: onnx-rust-server
+  #   volumes:
+  #     - ./models:/models:ro
+  #     - ./config:/config:ro
+  #   environment:
+  #     - MODEL_NAME=${MODEL_NAME:-embeddinggemma-300m}
+  #   ports:
+  #     - "8003:8000"
+  #   networks:
+  #     - onnx-rust-net
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: '16'
+  #         memory: 32G
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+  #     interval: 5s
+  #     timeout: 3s
+  #     retries: 12
+  #     start_period: 30s
+
+  # onnx-rust-client:
+  #   build:
+  #     context: .
+  #     dockerfile: docker/benchmark_client/Dockerfile
+  #   container_name: onnx-rust-client
+  #   volumes:
+  #     - ./results:/results
+  #     - ./config:/config:ro
+  #   environment:
+  #     - FRAMEWORK=onnx-rust
+  #     - MODEL_NAME=${MODEL_NAME:-embeddinggemma-300m}
+  #     - SERVER_URL=http://onnx-rust-server:8000
+  #   depends_on:
+  #     onnx-rust-server:
+  #       condition: service_healthy
+  #   networks:
+  #     - onnx-rust-net
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: '16'
+  #         memory: 32G
+
+  # ============================================================================
+  # ONNX Runtime Native C++ (placeholder for future implementation)
+  # ============================================================================
+  # onnx-native-server:
+  #   build:
+  #     context: .
+  #     dockerfile: docker/onnx_native/server/Dockerfile
+  #   container_name: onnx-native-server
+  #   volumes:
+  #     - ./models:/models:ro
+  #     - ./config:/config:ro
+  #   environment:
+  #     - MODEL_NAME=${MODEL_NAME:-embeddinggemma-300m}
+  #   ports:
+  #     - "8004:8000"
+  #   networks:
+  #     - onnx-native-net
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: '16'
+  #         memory: 32G
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+  #     interval: 5s
+  #     timeout: 3s
+  #     retries: 12
+  #     start_period: 30s
+
+  # onnx-native-client:
+  #   build:
+  #     context: .
+  #     dockerfile: docker/benchmark_client/Dockerfile
+  #   container_name: onnx-native-client
+  #   volumes:
+  #     - ./results:/results
+  #     - ./config:/config:ro
+  #   environment:
+  #     - FRAMEWORK=onnx-native
+  #     - MODEL_NAME=${MODEL_NAME:-embeddinggemma-300m}
+  #     - SERVER_URL=http://onnx-native-server:8000
+  #   depends_on:
+  #     onnx-native-server:
+  #       condition: service_healthy
+  #   networks:
+  #     - onnx-native-net
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: '16'
+  #         memory: 32G
+
+  # ============================================================================
+  # Candle (placeholder for future implementation)
+  # ============================================================================
+  # candle-server:
+  #   build:
+  #     context: .
+  #     dockerfile: docker/candle/server/Dockerfile
+  #   container_name: candle-server
+  #   volumes:
+  #     - ./models:/models:ro
+  #     - ./config:/config:ro
+  #   environment:
+  #     - MODEL_NAME=${MODEL_NAME:-embeddinggemma-300m}
+  #   ports:
+  #     - "8005:8000"
+  #   networks:
+  #     - candle-net
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: '16'
+  #         memory: 32G
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+  #     interval: 5s
+  #     timeout: 3s
+  #     retries: 12
+  #     start_period: 30s
+
+  # candle-client:
+  #   build:
+  #     context: .
+  #     dockerfile: docker/benchmark_client/Dockerfile
+  #   container_name: candle-client
+  #   volumes:
+  #     - ./results:/results
+  #     - ./config:/config:ro
+  #   environment:
+  #     - FRAMEWORK=candle
+  #     - MODEL_NAME=${MODEL_NAME:-embeddinggemma-300m}
+  #     - SERVER_URL=http://candle-server:8000
+  #   depends_on:
+  #     candle-server:
+  #       condition: service_healthy
+  #   networks:
+  #     - candle-net
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: '16'
+  #         memory: 32G
+
+networks:
+  pytorch-net:
+    driver: bridge
+  onnx-python-net:
+    driver: bridge
+  openvino-net:
+    driver: bridge
+  # onnx-rust-net:
+  #   driver: bridge
+  # onnx-native-net:
+  #   driver: bridge
+  # candle-net:
+  #   driver: bridge
+
+volumes:
+  models:
+  results:

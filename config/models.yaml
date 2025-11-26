@@ -1,0 +1,121 @@
+# Model configurations for benchmarking
+# Each model can be easily swapped by changing active_model in benchmark.yaml
+
+models:
+  # Text Embedding Models
+  embeddinggemma-300m:
+    name: "EmbeddingGemma 300M"
+    type: "text_embedding"
+    huggingface_id: "google/embeddinggemma-300m"
+    max_seq_length: 8192
+    embedding_dim: 256
+    params: "308M"
+    multilingual: true
+    description: "Google's efficient on-device embedding model"
+
+    # Framework-specific model paths (relative to /models mount in containers)
+    paths:
+      pytorch: "/models/embeddinggemma-300m/pytorch"
+      onnx: "/models/embeddinggemma-300m/onnx/model.onnx"
+      onnx_optimized: "/models/embeddinggemma-300m/onnx/model_optimized.onnx"
+      openvino: "/models/embeddinggemma-300m/openvino"
+
+    # Tokenizer configuration
+    tokenizer:
+      huggingface_id: "google/embeddinggemma-300m"
+      max_length: 8192
+      padding: true
+      truncation: true
+
+  qwen3-embedding-600m:
+    name: "Qwen3 Embedding 0.6B"
+    type: "text_embedding"
+    huggingface_id: "Qwen/Qwen3-Embedding-0.6B"
+    max_seq_length: 8192
+    embedding_dim: 768
+    params: "600M"
+    multilingual: true
+    description: "Alibaba's multilingual embedding model with code support"
+
+    paths:
+      pytorch: "/models/qwen3-embedding-600m/pytorch"
+      onnx: "/models/qwen3-embedding-600m/onnx/model.onnx"
+      onnx_optimized: "/models/qwen3-embedding-600m/onnx/model_optimized.onnx"
+      openvino: "/models/qwen3-embedding-600m/openvino"
+
+    tokenizer:
+      huggingface_id: "Qwen/Qwen3-Embedding-0.6B"
+      max_length: 8192
+      padding: true
+      truncation: true
+
+  bge-m3:
+    name: "BGE-M3"
+    type: "text_embedding"
+    huggingface_id: "BAAI/bge-m3"
+    max_seq_length: 8192
+    embedding_dim: 1024
+    params: "600M"
+    multilingual: true
+    description: "BAAI's popular multi-functional embedding model"
+
+    paths:
+      pytorch: "/models/bge-m3/pytorch"
+      onnx: "/models/bge-m3/onnx/model.onnx"
+      onnx_optimized: "/models/bge-m3/onnx/model_optimized.onnx"
+      openvino: "/models/bge-m3/openvino"
+
+    tokenizer:
+      huggingface_id: "BAAI/bge-m3"
+      max_length: 8192
+      padding: true
+      truncation: true
+
+  # Multimodal Embedding Models
+  siglip:
+    name: "SigLIP Base"
+    type: "multimodal"
+    huggingface_id: "google/siglip-base-patch16-224"
+    max_seq_length: 64
+    embedding_dim: 768
+    image_size: 224
+    params: "~400M"
+    modalities: ["text", "image"]
+    description: "Google's improved CLIP with sigmoid loss"
+
+    paths:
+      pytorch: "/models/siglip/pytorch"
+      onnx_text: "/models/siglip/onnx/text_encoder.onnx"
+      onnx_image: "/models/siglip/onnx/image_encoder.onnx"
+      openvino_text: "/models/siglip/openvino/text"
+      openvino_image: "/models/siglip/openvino/image"
+
+    tokenizer:
+      huggingface_id: "google/siglip-base-patch16-224"
+      max_length: 64
+      padding: true
+      truncation: true
+
+  clip:
+    name: "OpenAI CLIP ViT-B/16"
+    type: "multimodal"
+    huggingface_id: "openai/clip-vit-base-patch16"
+    max_seq_length: 77
+    embedding_dim: 512
+    image_size: 224
+    params: "~150M"
+    modalities: ["text", "image"]
+    description: "OpenAI's foundational vision-language model"
+
+    paths:
+      pytorch: "/models/clip/pytorch"
+      onnx_text: "/models/clip/onnx/text_encoder.onnx"
+      onnx_image: "/models/clip/onnx/image_encoder.onnx"
+      openvino_text: "/models/clip/openvino/text"
+      openvino_image: "/models/clip/openvino/image"
+
+    tokenizer:
+      huggingface_id: "openai/clip-vit-base-patch16"
+      max_length: 77
+      padding: true
+      truncation: true

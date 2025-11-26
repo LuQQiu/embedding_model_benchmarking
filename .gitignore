@@ -1,0 +1,77 @@
+# Model files (large, should be downloaded on instance)
+models/
+*.onnx
+*.bin
+*.safetensors
+*.pt
+*.pth
+
+# Results
+results/
+*.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+venv/
+env/
+.venv
+
+# Rust
+target/
+Cargo.lock
+**/*.rs.bk
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+.terraform.lock.hcl
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Docker
+.dockerignore
+
+# SSH keys
+*.pem
+*.pub
+id_rsa
+id_ed25519
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Environment variables
+.env
+.env.local
+
+# Instance-specific files (contains IP, instance ID)
+instance_info.sh
