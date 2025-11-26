@@ -12,9 +12,9 @@ RUN pip install --no-cache-dir torch==2.2.0 --index-url https://download.pytorch
 
 # Install other packages from PyPI
 RUN pip install --no-cache-dir \
-    transformers==4.38.0 \
-    sentence-transformers==2.5.1 \
-    tokenizers==0.15.2 \
+    transformers>=4.45.0 \
+    sentence-transformers>=3.0.0 \
+    tokenizers>=0.19.0 \
     numpy==1.26.4 \
     pyyaml==6.0.1 \
     psutil==5.9.8 \

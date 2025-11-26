@@ -9,8 +9,8 @@ RUN apt-get update && apt-get install -y \
 # Install Python packages
 RUN pip install --no-cache-dir \
     onnxruntime==1.17.1 \
-    transformers==4.38.0 \
-    tokenizers==0.15.2 \
+    transformers>=4.45.0 \
+    tokenizers>=0.19.0 \
     numpy==1.26.4 \
     pyyaml==6.0.1 \
     psutil==5.9.8 \
