@@ -54,7 +54,7 @@ class HealthResponse(BaseModel):
 class InfoResponse(BaseModel):
     framework: str
     model_name: str
-    model_config: dict
+    model_configuration: dict
     model_load_time_ms: float
     total_requests: int
     openvino_version: str
@@ -169,7 +169,7 @@ async def info():
     return InfoResponse(
         framework="openvino",
         model_name=os.environ.get('MODEL_NAME', 'embeddinggemma-300m'),
-        model_config=state.model_config,
+        model_configuration=state.model_config,
         model_load_time_ms=state.model_load_time_ms,
         total_requests=state.total_requests,
         openvino_version=ov_version,
