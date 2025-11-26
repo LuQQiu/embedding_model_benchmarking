@@ -15,6 +15,8 @@ import subprocess
 import json
 import yaml
 import time
+import csv
+from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Any
 
@@ -326,6 +328,92 @@ class BenchmarkOrchestrator:
 
         return "\n".join(summary)
 
+    def export_to_csv(self, output_file: str = None) -> str:
+        """
+        Export benchmark results to CSV format
+
+        CSV columns: timestamp, model, runtime, language, concurrency, qps, p50_latency_ms, p90_latency_ms, p95_latency_ms, p99_latency_ms
+
+        Args:
+            output_file: Path to output CSV file (default: results/{model}/benchmark_results_{timestamp}.csv)
+
+        Returns:
+            Path to generated CSV file
+        """
+        results = self.collect_results()
+
+        if not results:
+            print("No results to export")
+            return None
+
+        # Generate timestamp
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        # Determine output file
+        if output_file is None:
+            timestamp_file = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_file = self.results_dir / f"benchmark_results_{timestamp_file}.csv"
+        else:
+            output_file = Path(output_file)
+
+        # Prepare CSV data
+        csv_rows = []
+
+        for framework, data in results.items():
+            # Determine runtime and language
+            runtime_map = {
+                'pytorch': ('PyTorch', 'Python'),
+                'onnx-python': ('ONNX Runtime', 'Python'),
+                'onnx-rust': ('ONNX Runtime', 'Rust'),
+                'onnx-native': ('ONNX Runtime', 'C++'),
+                'candle': ('Candle', 'Rust'),
+                'openvino': ('OpenVINO', 'Python')
+            }
+
+            runtime, language = runtime_map.get(framework, (framework, 'Unknown'))
+
+            # Extract scenarios
+            scenarios = data.get('scenarios', {})
+
+            for scenario_name, scenario_data in scenarios.items():
+                concurrency = scenario_data.get('concurrency', 0)
+                qps = scenario_data.get('throughput_qps', 0)
+
+                latency = scenario_data.get('latency_ms', {})
+                p50 = latency.get('median', 0)
+                p90 = latency.get('p90', 0)  # Will be 0 if not present
+                p95 = latency.get('p95', 0)
+                p99 = latency.get('p99', 0)
+
+                csv_rows.append({
+                    'timestamp': timestamp,
+                    'model': self.model_name,
+                    'runtime': runtime,
+                    'language': language,
+                    'concurrency': concurrency,
+                    'qps': f"{qps:.2f}",
+                    'p50_latency_ms': f"{p50:.2f}",
+                    'p90_latency_ms': f"{p90:.2f}",
+                    'p95_latency_ms': f"{p95:.2f}",
+                    'p99_latency_ms': f"{p99:.2f}"
+                })
+
+        # Write CSV
+        fieldnames = [
+            'timestamp', 'model', 'runtime', 'language', 'concurrency',
+            'qps', 'p50_latency_ms', 'p90_latency_ms', 'p95_latency_ms', 'p99_latency_ms'
+        ]
+
+        with open(output_file, 'w', newline='') as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(csv_rows)
+
+        print(f"\n✓ CSV results exported to: {output_file}")
+        print(f"  Total rows: {len(csv_rows)}")
+
+        return str(output_file)
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -352,6 +440,13 @@ def main():
         action='store_true',
         help='Only print summary of existing results'
     )
+    parser.add_argument(
+        '--csv',
+        type=str,
+        nargs='?',
+        const='auto',
+        help='Export results to CSV file (specify path or use auto-generated name)'
+    )
 
     args = parser.parse_args()
 
@@ -362,12 +457,21 @@ def main():
 
     if args.summary_only:
         print(orchestrator.generate_summary())
+        # Export to CSV if requested
+        if args.csv:
+            csv_path = None if args.csv == 'auto' else args.csv
+            orchestrator.export_to_csv(csv_path)
     else:
         # Run benchmarks
         orchestrator.run_all_benchmarks(skip_on_error=args.skip_on_error)
 
         # Print summary
         print(orchestrator.generate_summary())
+
+        # Export to CSV if requested
+        if args.csv:
+            csv_path = None if args.csv == 'auto' else args.csv
+            orchestrator.export_to_csv(csv_path)
 
 
 if __name__ == '__main__':

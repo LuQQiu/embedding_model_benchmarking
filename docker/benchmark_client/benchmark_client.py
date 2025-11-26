@@ -150,6 +150,7 @@ class BenchmarkClient:
             return {
                 "mean": 0.0,
                 "median": 0.0,
+                "p90": 0.0,
                 "p95": 0.0,
                 "p99": 0.0,
                 "p999": 0.0,
@@ -163,6 +164,7 @@ class BenchmarkClient:
         return {
             "mean": float(np.mean(timings_array)),
             "median": float(np.median(timings_array)),
+            "p90": float(np.percentile(timings_array, 90)),
             "p95": float(np.percentile(timings_array, 95)),
             "p99": float(np.percentile(timings_array, 99)),
             "p999": float(np.percentile(timings_array, 99.9)),
@@ -258,6 +260,7 @@ class BenchmarkClient:
         print(f"    Latency (ms):")
         print(f"      Mean:   {latency_stats['mean']:8.2f}")
         print(f"      Median: {latency_stats['median']:8.2f}")
+        print(f"      P90:    {latency_stats['p90']:8.2f}")
         print(f"      P95:    {latency_stats['p95']:8.2f}")
         print(f"      P99:    {latency_stats['p99']:8.2f}")
         print(f"      P99.9:  {latency_stats['p999']:8.2f}")

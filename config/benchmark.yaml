@@ -26,54 +26,35 @@ warmup:
 
 # Benchmark scenarios
 scenarios:
-  # Single query - baseline latency
-  - name: "single_query"
+  - name: "concurrency_1"
     concurrency: 1
     num_requests: 1000
     batch_size: 1
-    description: "Baseline single-threaded performance"
+    description: "Concurrency 1 - baseline single-threaded performance"
 
-  # Low concurrency
-  - name: "low_concurrency"
+  - name: "concurrency_2"
+    concurrency: 2
+    num_requests: 2000
+    batch_size: 1
+    description: "Concurrency 2"
+
+  - name: "concurrency_4"
     concurrency: 4
     num_requests: 5000
     batch_size: 1
-    description: "Low concurrent load (4 parallel requests)"
+    description: "Concurrency 4"
 
-  # Medium concurrency
-  - name: "medium_concurrency"
+  - name: "concurrency_8"
+    concurrency: 8
+    num_requests: 8000
+    batch_size: 1
+    description: "Concurrency 8"
+
+  - name: "concurrency_16"
     concurrency: 16
     num_requests: 10000
     batch_size: 1
-    description: "Medium concurrent load (16 parallel requests)"
-
-  # High concurrency
-  - name: "high_concurrency"
-    concurrency: 64
-    num_requests: 20000
-    batch_size: 1
-    description: "High concurrent load (64 parallel requests)"
-
-  # Very high concurrency (stress test)
-  - name: "stress_test"
-    concurrency: 128
-    num_requests: 30000
-    batch_size: 1
-    description: "Stress test with 128 concurrent requests"
-
-  # Batch processing
-  - name: "batch_processing"
-    concurrency: 1
-    num_requests: 500
-    batch_size: 8
-    description: "Batch processing with batch size 8"
-
-  # Batch processing with concurrency
-  - name: "batch_concurrent"
-    concurrency: 8
-    num_requests: 2000
-    batch_size: 4
-    description: "Concurrent batch processing (8 workers, batch size 4)"
+    description: "Concurrency 16"
 
 # Metrics to collect
 metrics:

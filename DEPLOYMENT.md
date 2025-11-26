@@ -242,7 +242,7 @@ Once connected to the instance:
 
 ```bash
 # Clone your repository
-git clone https://github.com/YOUR_USERNAME/embedding_model_benchmarking.git
+git clone https://github.com/LuQQiu/embedding_model_benchmarking.git
 cd embedding_model_benchmarking
 
 # Run setup script

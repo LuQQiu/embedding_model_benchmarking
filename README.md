@@ -131,9 +131,20 @@ python3 orchestrator/runner.py --model embeddinggemma-300m
 # Print summary
 python3 orchestrator/runner.py --model embeddinggemma-300m --summary-only
 
-# View detailed results
+# Export to CSV with timestamp (auto-generated filename)
+python3 orchestrator/runner.py --model embeddinggemma-300m --summary-only --csv
+
+# Export to CSV with custom filename
+python3 orchestrator/runner.py --model embeddinggemma-300m --summary-only --csv results/my_results.csv
+
+# View detailed JSON results
 cat results/embeddinggemma-300m/pytorch.json | jq .
 ```
+
+**CSV Output Format:**
+- Columns: `timestamp, model, runtime, language, concurrency, qps, p50_latency_ms, p90_latency_ms, p95_latency_ms, p99_latency_ms`
+- One row per framework per concurrency level
+- Example: `results/embeddinggemma-300m/benchmark_results_20241126_153045.csv`
 
 ## Configuration
 
@@ -212,6 +223,22 @@ python3 orchestrator/runner.py --model embeddinggemma-300m --frameworks pytorch 
 ```bash
 # Don't stop if one framework fails
 python3 orchestrator/runner.py --model embeddinggemma-300m --skip-on-error
+```
+
+### Export Results to CSV
+
+```bash
+# Run benchmarks and export to CSV automatically
+python3 orchestrator/runner.py --model embeddinggemma-300m --csv
+
+# Run specific frameworks and export
+python3 orchestrator/runner.py --model embeddinggemma-300m --frameworks pytorch onnx-python --csv
+
+# Export existing results to CSV (no new benchmark run)
+python3 orchestrator/runner.py --model embeddinggemma-300m --summary-only --csv
+
+# Specify custom CSV filename
+python3 orchestrator/runner.py --model embeddinggemma-300m --summary-only --csv results/benchmark_$(date +%Y%m%d).csv
 ```
 
 ### Test Different Model
