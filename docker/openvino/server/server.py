@@ -250,7 +250,11 @@ async def embed(request: EmbedRequest):
         )
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Inference error: {str(e)}")
+        import traceback
+        error_msg = f"Inference error: {str(e)}"
+        print(f"ERROR: {error_msg}")
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=error_msg)
 
 
 @app.get("/")
