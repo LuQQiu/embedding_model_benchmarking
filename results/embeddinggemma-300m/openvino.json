@@ -1,0 +1,216 @@
+{
+  "framework": "openvino",
+  "model_name": "embeddinggemma-300m",
+  "server_url": "http://openvino-server:8000",
+  "first_inference_ms": 33.40868299983413,
+  "server_info": {
+    "framework": "openvino",
+    "model_name": "embeddinggemma-300m",
+    "model_configuration": {
+      "name": "EmbeddingGemma 300M",
+      "type": "text_embedding",
+      "huggingface_id": "google/embeddinggemma-300m",
+      "max_seq_length": 8192,
+      "embedding_dim": 256,
+      "params": "308M",
+      "multilingual": true,
+      "description": "Google's efficient on-device embedding model",
+      "paths": {
+        "pytorch": "/models/embeddinggemma-300m/pytorch",
+        "onnx": "/models/embeddinggemma-300m/onnx/model.onnx",
+        "onnx_optimized": "/models/embeddinggemma-300m/onnx/model_optimized.onnx",
+        "openvino": "/models/embeddinggemma-300m/openvino"
+      },
+      "tokenizer": {
+        "huggingface_id": "google/embeddinggemma-300m",
+        "max_length": 8192,
+        "padding": true,
+        "truncation": true
+      }
+    },
+    "model_load_time_ms": 2337.6566570004798,
+    "total_requests": 0,
+    "openvino_version": "2024.0.0-14509-34caeefd078-releases/2024/0",
+    "device": "CPU",
+    "cpu_count": 32,
+    "memory_rss_mb": 2044.53125,
+    "cpu_percent": 0.0
+  },
+  "final_server_info": {
+    "framework": "openvino",
+    "model_name": "embeddinggemma-300m",
+    "model_configuration": {
+      "name": "EmbeddingGemma 300M",
+      "type": "text_embedding",
+      "huggingface_id": "google/embeddinggemma-300m",
+      "max_seq_length": 8192,
+      "embedding_dim": 256,
+      "params": "308M",
+      "multilingual": true,
+      "description": "Google's efficient on-device embedding model",
+      "paths": {
+        "pytorch": "/models/embeddinggemma-300m/pytorch",
+        "onnx": "/models/embeddinggemma-300m/onnx/model.onnx",
+        "onnx_optimized": "/models/embeddinggemma-300m/onnx/model_optimized.onnx",
+        "openvino": "/models/embeddinggemma-300m/openvino"
+      },
+      "tokenizer": {
+        "huggingface_id": "google/embeddinggemma-300m",
+        "max_length": 8192,
+        "padding": true,
+        "truncation": true
+      }
+    },
+    "model_load_time_ms": 2337.6566570004798,
+    "total_requests": 38101,
+    "openvino_version": "2024.0.0-14509-34caeefd078-releases/2024/0",
+    "device": "CPU",
+    "cpu_count": 32,
+    "memory_rss_mb": 2260.53125,
+    "cpu_percent": 1439.9
+  },
+  "scenarios": {
+    "concurrency_1": {
+      "scenario_name": "concurrency_1",
+      "concurrency": 1,
+      "num_requests": 1000,
+      "batch_size": 1,
+      "latency_ms": {
+        "mean": 27.97171412998523,
+        "median": 30.014460499842244,
+        "p90": 31.776164099755988,
+        "p95": 32.54381230058243,
+        "p99": 33.86407785982556,
+        "p999": 34.62296052033798,
+        "min": 17.002571999910288,
+        "max": 34.65744599998288,
+        "stddev": 5.201747833809476
+      },
+      "throughput_qps": 35.7109290361775,
+      "total_duration_sec": 28.002631882999594,
+      "cpu_percent": 4.2,
+      "memory_rss_mb": 47.25,
+      "errors": 0,
+      "error_rate": 0.0
+    },
+    "concurrency_2": {
+      "scenario_name": "concurrency_2",
+      "concurrency": 2,
+      "num_requests": 2000,
+      "batch_size": 1,
+      "latency_ms": {
+        "mean": 53.64719491099822,
+        "median": 57.51903800000946,
+        "p90": 60.11953919996813,
+        "p95": 60.892986600310905,
+        "p99": 62.28828834984597,
+        "p999": 63.486574654773186,
+        "min": 34.68915800021932,
+        "max": 64.7063189999244,
+        "stddev": 6.422804682320822
+      },
+      "throughput_qps": 37.24789186641639,
+      "total_duration_sec": 53.69431395399988,
+      "cpu_percent": 5.7,
+      "memory_rss_mb": 50.5,
+      "errors": 0,
+      "error_rate": 0.0
+    },
+    "concurrency_4": {
+      "scenario_name": "concurrency_4",
+      "concurrency": 4,
+      "num_requests": 5000,
+      "batch_size": 1,
+      "latency_ms": {
+        "mean": 106.88480091981091,
+        "median": 104.8025879999841,
+        "p90": 116.85108849987955,
+        "p95": 118.4481628003141,
+        "p99": 121.41704037035198,
+        "p999": 124.73632175363043,
+        "min": 38.565804000427306,
+        "max": 153.9877470004285,
+        "stddev": 5.7178907625349416
+      },
+      "throughput_qps": 37.40137003886517,
+      "total_duration_sec": 133.684942418,
+      "cpu_percent": 5.3,
+      "memory_rss_mb": 56.5390625,
+      "errors": 0,
+      "error_rate": 0.0
+    },
+    "concurrency_8": {
+      "scenario_name": "concurrency_8",
+      "concurrency": 8,
+      "num_requests": 8000,
+      "batch_size": 1,
+      "latency_ms": {
+        "mean": 213.59201830512185,
+        "median": 211.56415650011695,
+        "p90": 223.53480890051287,
+        "p95": 225.25980879950112,
+        "p99": 228.3777713307245,
+        "p999": 232.75339109229304,
+        "min": 34.848033000344,
+        "max": 365.3429670002879,
+        "stddev": 8.429784977465015
+      },
+      "throughput_qps": 37.43226015314109,
+      "total_duration_sec": 213.71939517600003,
+      "cpu_percent": 5.4,
+      "memory_rss_mb": 63.3359375,
+      "errors": 0,
+      "error_rate": 0.0
+    },
+    "concurrency_12": {
+      "scenario_name": "concurrency_12",
+      "concurrency": 12,
+      "num_requests": 10000,
+      "batch_size": 1,
+      "latency_ms": {
+        "mean": 320.8099547723976,
+        "median": 322.26386499996806,
+        "p90": 330.14307289995486,
+        "p95": 331.9602457000201,
+        "p99": 335.7325527695775,
+        "p999": 340.6604226070549,
+        "min": 72.43898399974569,
+        "max": 504.3692409999494,
+        "stddev": 10.351414665094017
+      },
+      "throughput_qps": 37.3808660453575,
+      "total_duration_sec": 267.51654142699954,
+      "cpu_percent": 5.5,
+      "memory_rss_mb": 67.0234375,
+      "errors": 0,
+      "error_rate": 0.0
+    },
+    "concurrency_16": {
+      "scenario_name": "concurrency_16",
+      "concurrency": 16,
+      "num_requests": 12000,
+      "batch_size": 1,
+      "latency_ms": {
+        "mean": 427.9321664877558,
+        "median": 428.83640199988804,
+        "p90": 436.6557314995589,
+        "p95": 438.8395197992395,
+        "p99": 444.2185276696,
+        "p999": 461.77328321650117,
+        "min": 91.7657859999963,
+        "max": 665.9655220000786,
+        "stddev": 12.364908881461774
+      },
+      "throughput_qps": 37.3624843517336,
+      "total_duration_sec": 321.17778590499984,
+      "cpu_percent": 5.5,
+      "memory_rss_mb": 72.2890625,
+      "errors": 0,
+      "error_rate": 0.0
+    }
+  },
+  "client_info": {
+    "cpu_count": 32,
+    "python_version": "3.11.14"
+  }
+}

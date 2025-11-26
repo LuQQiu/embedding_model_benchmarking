@@ -1,0 +1,65 @@
+version: '3.8'
+
+# Rust Embedding Model Benchmarking
+# ONNX Runtime (Rust) implementation
+
+services:
+  # ============================================================================
+  # ONNX Runtime Rust Server
+  # ============================================================================
+  onnx-rust-server:
+    build:
+      context: ..
+      dockerfile: rust/docker/onnx_server/Dockerfile
+    container_name: onnx-rust-server
+    volumes:
+      - ../models:/models:ro
+      - ../config:/config:ro
+    environment:
+      - MODEL_NAME=${MODEL_NAME:-embeddinggemma-300m}
+      - RUST_LOG=info
+    ports:
+      - "8000:8000"
+    networks:
+      - onnx-rust-net
+    deploy:
+      resources:
+        limits:
+          cpus: '16'
+          memory: 32G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 30s
+
+  # ============================================================================
+  # Benchmark Client (Python - reuse existing)
+  # ============================================================================
+  onnx-rust-client:
+    build:
+      context: ..
+      dockerfile: docker/benchmark_client/Dockerfile
+    container_name: onnx-rust-client
+    volumes:
+      - ../results:/results
+      - ../config:/config:ro
+    environment:
+      - FRAMEWORK=onnx-rust
+      - MODEL_NAME=${MODEL_NAME:-embeddinggemma-300m}
+      - SERVER_URL=http://onnx-rust-server:8000
+    depends_on:
+      onnx-rust-server:
+        condition: service_healthy
+    networks:
+      - onnx-rust-net
+    deploy:
+      resources:
+        limits:
+          cpus: '14'
+          memory: 16G
+
+networks:
+  onnx-rust-net:
+    driver: bridge

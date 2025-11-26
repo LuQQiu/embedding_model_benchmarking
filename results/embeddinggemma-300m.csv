@@ -1,0 +1,19 @@
+timestamp,model,runtime,language,concurrency,qps,p50_latency_ms,p90_latency_ms,p95_latency_ms,p99_latency_ms
+2025-11-26 18:32:42,embeddinggemma-300m,PyTorch,Python,1,38.11,25.61,27.95,31.10,33.18
+2025-11-26 18:32:42,embeddinggemma-300m,PyTorch,Python,2,40.59,48.47,51.70,54.89,62.38
+2025-11-26 18:32:42,embeddinggemma-300m,PyTorch,Python,4,40.51,96.97,102.98,108.38,126.62
+2025-11-26 18:32:42,embeddinggemma-300m,PyTorch,Python,8,40.35,195.34,206.71,218.00,244.39
+2025-11-26 18:32:42,embeddinggemma-300m,PyTorch,Python,12,31.96,408.26,446.15,456.08,486.41
+2025-11-26 18:32:42,embeddinggemma-300m,PyTorch,Python,16,27.56,575.99,612.83,624.56,754.31
+2025-11-26 18:32:42,embeddinggemma-300m,ONNX Runtime,Python,1,16.35,68.00,83.15,87.34,92.96
+2025-11-26 18:32:42,embeddinggemma-300m,ONNX Runtime,Python,2,19.68,100.78,122.15,139.63,153.25
+2025-11-26 18:32:42,embeddinggemma-300m,ONNX Runtime,Python,4,23.24,174.32,202.78,209.77,236.18
+2025-11-26 18:32:42,embeddinggemma-300m,ONNX Runtime,Python,8,22.48,354.41,425.94,452.56,486.20
+2025-11-26 18:32:42,embeddinggemma-300m,ONNX Runtime,Python,12,27.41,484.56,587.90,609.59,683.95
+2025-11-26 18:32:42,embeddinggemma-300m,ONNX Runtime,Python,16,46.85,337.36,374.71,381.04,386.73
+2025-11-26 18:32:42,embeddinggemma-300m,OpenVINO,Python,1,35.71,30.01,31.78,32.54,33.86
+2025-11-26 18:32:42,embeddinggemma-300m,OpenVINO,Python,2,37.25,57.52,60.12,60.89,62.29
+2025-11-26 18:32:42,embeddinggemma-300m,OpenVINO,Python,4,37.40,104.80,116.85,118.45,121.42
+2025-11-26 18:32:42,embeddinggemma-300m,OpenVINO,Python,8,37.43,211.56,223.53,225.26,228.38
+2025-11-26 18:32:42,embeddinggemma-300m,OpenVINO,Python,12,37.38,322.26,330.14,331.96,335.73
+2025-11-26 18:32:42,embeddinggemma-300m,OpenVINO,Python,16,37.36,428.84,436.66,438.84,444.22

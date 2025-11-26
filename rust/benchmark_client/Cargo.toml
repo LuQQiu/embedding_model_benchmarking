@@ -1,0 +1,28 @@
+[package]
+name = "benchmark_client"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+common = { workspace = true }
+
+# HTTP client
+reqwest = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+
+# Utilities
+anyhow = { workspace = true }
+indicatif = { workspace = true }
+
+# System monitoring
+sysinfo = { workspace = true }
+
+# Statistics
+statrs = { workspace = true }
+
+# Concurrency
+rayon = "1.10"
