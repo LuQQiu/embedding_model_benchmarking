@@ -31,8 +31,10 @@ class BenchmarkResult:
     latency_ms: Dict[str, float]
     throughput_qps: float
     total_duration_sec: float
-    cpu_percent: float
-    memory_rss_mb: float
+    server_cpu_percent: float
+    server_memory_mb: float
+    client_cpu_percent: float
+    client_memory_mb: float
     errors: int
     error_rate: float
 
@@ -206,8 +208,8 @@ class BenchmarkClient:
                 batch = [test_data[(text_idx + j) % len(test_data)] for j in range(batch_size)]
                 samples.append(batch)
 
-        # Track client resource usage
-        self.process.cpu_percent()  # Initialize
+        # Initialize client resource tracking
+        self.process.cpu_percent()  # Initialize CPU tracking
 
         # Benchmark function
         error_count = 0
@@ -251,9 +253,16 @@ class BenchmarkClient:
         # Calculate metrics
         latency_stats = self.calculate_stats(timings)
         throughput_qps = len(timings) / total_duration if total_duration > 0 else 0
-        cpu_percent = self.process.cpu_percent()
-        memory_rss = self.process.memory_info().rss / 1024 / 1024
         error_rate = error_count / num_requests if num_requests > 0 else 0
+
+        # Get server metrics from /info endpoint
+        server_info = self.get_server_info()
+        server_cpu_percent = server_info.get('cpu_percent', 0.0)
+        server_memory_mb = server_info.get('memory_rss_mb', 0.0)
+
+        # Get client metrics
+        client_cpu_percent = self.process.cpu_percent()
+        client_memory_mb = self.process.memory_info().rss / 1024 / 1024
 
         # Print results
         print(f"\n  Results:")
@@ -265,8 +274,10 @@ class BenchmarkClient:
         print(f"      P99:    {latency_stats['p99']:8.2f}")
         print(f"      P99.9:  {latency_stats['p999']:8.2f}")
         print(f"    Throughput: {throughput_qps:.2f} QPS")
-        print(f"    Client CPU: {cpu_percent:.1f}%")
-        print(f"    Client Memory: {memory_rss:.1f} MB")
+        print(f"    Server CPU: {server_cpu_percent:.1f}%")
+        print(f"    Server Memory: {server_memory_mb:.1f} MB")
+        print(f"    Client CPU: {client_cpu_percent:.1f}%")
+        print(f"    Client Memory: {client_memory_mb:.1f} MB")
         if error_count > 0:
             print(f"    ⚠ Errors: {error_count}/{num_requests} ({error_rate*100:.2f}%)")
 
@@ -278,8 +289,10 @@ class BenchmarkClient:
             latency_ms=latency_stats,
             throughput_qps=throughput_qps,
             total_duration_sec=total_duration,
-            cpu_percent=cpu_percent,
-            memory_rss_mb=memory_rss,
+            server_cpu_percent=server_cpu_percent,
+            server_memory_mb=server_memory_mb,
+            client_cpu_percent=client_cpu_percent,
+            client_memory_mb=client_memory_mb,
             errors=error_count,
             error_rate=error_rate
         )
