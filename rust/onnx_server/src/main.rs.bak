@@ -6,11 +6,9 @@ use axum::{
     routing::{get, post},
     Router,
 };
-use common::{
-    config::ModelsConfig, EmbedRequest, EmbedResponse, HealthResponse, InfoResponse, ModelConfig,
-};
-use ndarray::{Array2, Array3, Axis};
-use ort::{session::builder::GraphOptimizationLevel, session::Session, value::Value};
+use common::{EmbedRequest, EmbedResponse, HealthResponse, InfoResponse, ModelConfig, ModelsConfig};
+use ndarray::{Array2, Axis};
+use ort::{GraphOptimizationLevel, Session};
 use serde_json::json;
 use std::{
     collections::HashMap,
@@ -24,7 +22,7 @@ use tracing::{info, error};
 
 // Application state
 struct AppState {
-    session: tokio::sync::Mutex<Session>,
+    session: Session,
     tokenizer: Tokenizer,
     model_config: ModelConfig,
     model_load_time_ms: f64,
@@ -55,18 +53,6 @@ impl IntoResponse for AppError {
 impl From<anyhow::Error> for AppError {
     fn from(err: anyhow::Error) -> Self {
         AppError::Internal(err.to_string())
-    }
-}
-
-impl From<ndarray::ShapeError> for AppError {
-    fn from(err: ndarray::ShapeError) -> Self {
-        AppError::Internal(format!("Shape error: {}", err))
-    }
-}
-
-impl From<ort::Error> for AppError {
-    fn from(err: ort::Error) -> Self {
-        AppError::Internal(format!("ORT error: {}", err))
     }
 }
 
@@ -108,15 +94,13 @@ async fn main() -> Result<()> {
     }
 
     // Create ONNX Runtime session
-    let cpu_count = std::thread::available_parallelism()
-        .map(|n| n.get())
-        .unwrap_or(1);
+    let cpu_count = num_cpus::get();
     info!("CPU count: {}", cpu_count);
 
     let session = Session::builder()?
         .with_optimization_level(GraphOptimizationLevel::Level3)?
-        .with_intra_threads(cpu_count)?
-        .with_inter_threads(cpu_count)?
+        .with_intra_threads(cpu_count as i16)?
+        .with_inter_threads(cpu_count as i16)?
         .commit_from_file(onnx_path)?;
 
     info!("✓ ONNX session created");
@@ -131,7 +115,7 @@ async fn main() -> Result<()> {
     let model_load_time_ms = start_time.elapsed().as_secs_f64() * 1000.0;
 
     info!("✓ Model loaded in {:.2}ms", model_load_time_ms);
-    info!("  ONNX Runtime version: 2.0.0-rc.10");
+    info!("  ONNX Runtime version: {}", ort::version());
     info!("  CPU count: {}", cpu_count);
     info!("");
     info!("Server ready on http://0.0.0.0:8000");
@@ -139,7 +123,7 @@ async fn main() -> Result<()> {
 
     // Create application state
     let state = Arc::new(AppState {
-        session: tokio::sync::Mutex::new(session),
+        session,
         tokenizer,
         model_config,
         model_load_time_ms,
@@ -152,7 +136,7 @@ async fn main() -> Result<()> {
     let app = Router::new()
         .route("/", get(root))
         .route("/health", get(health))
-        .route("/info", get(info_handler))
+        .route("/info", get(info))
         .route("/embed", post(embed))
         .layer(TraceLayer::new_for_http())
         .with_state(state);
@@ -176,14 +160,14 @@ async fn root() -> Json<serde_json::Value> {
     }))
 }
 
-async fn health(State(_state): State<Arc<AppState>>) -> Json<HealthResponse> {
+async fn health(State(state): State<Arc<AppState>>) -> Json<HealthResponse> {
     Json(HealthResponse {
         status: "healthy".to_string(),
         model_loaded: true,
     })
 }
 
-async fn info_handler(State(state): State<Arc<AppState>>) -> Result<Json<InfoResponse>, AppError> {
+async fn info(State(state): State<Arc<AppState>>) -> Result<Json<InfoResponse>, AppError> {
     let mut system = state.system.lock().await;
     system.refresh_all();
 
@@ -198,19 +182,15 @@ async fn info_handler(State(state): State<Arc<AppState>>) -> Result<Json<InfoRes
     model_configuration.insert("max_seq_length".to_string(), json!(state.model_config.max_seq_length));
     model_configuration.insert("embedding_dim".to_string(), json!(state.model_config.embedding_dim));
 
-    let cpu_count = std::thread::available_parallelism()
-        .map(|n| n.get())
-        .unwrap_or(1);
-
     Ok(Json(InfoResponse {
         framework: "onnx-rust".to_string(),
         model_name: std::env::var("MODEL_NAME").unwrap_or_else(|_| "embeddinggemma-300m".to_string()),
         model_configuration,
         model_load_time_ms: state.model_load_time_ms,
         total_requests: state.total_requests.load(Ordering::Relaxed),
-        runtime_version: "2.0.0-rc.10".to_string(),
+        runtime_version: ort::version(),
         device: "CPU".to_string(),
-        cpu_count,
+        cpu_count: num_cpus::get(),
         memory_rss_mb,
         cpu_percent,
     }))
@@ -257,46 +237,45 @@ async fn embed(
     }
 
     let input_ids = Array2::from_shape_vec((batch_size, max_len), input_ids_vec)?;
-    let attention_mask = Array2::from_shape_vec((batch_size, max_len), attention_mask_vec.clone())?;
+    let attention_mask = Array2::from_shape_vec((batch_size, max_len), attention_mask_vec)?;
 
-    // Run inference - ORT 2.0 RC requires creating Value objects
-    let input_ids_value = Value::from_array(input_ids)?;
-    let attention_mask_value = Value::from_array(attention_mask)?;
+    // Run inference
+    let outputs = state.session.run(ort::inputs![
+        "input_ids" => input_ids.view(),
+        "attention_mask" => attention_mask.view(),
+    ]?)?;
 
-    let last_hidden_state_3d = {
-        let mut session = state.session.lock().await;
-        let outputs = session.run(ort::inputs![
-            "input_ids" => input_ids_value,
-            "attention_mask" => attention_mask_value,
-        ])?;
+    // Get last hidden state
+    let last_hidden_state: ort::Value = outputs["last_hidden_state"].try_extract_tensor()?;
+    let last_hidden_state_array = last_hidden_state.view();
+    let shape = last_hidden_state_array.shape();
 
-        // Get token embeddings - ORT 2.0 RC returns tuple (shape, data)
-        let (shape, data) = outputs["token_embeddings"].try_extract_tensor::<f32>()?;
+    // Convert to ndarray Array3
+    let last_hidden_state_nd: Array2<f32> = ndarray::ArrayView3::<f32>::from_shape(
+        (shape[0], shape[1], shape[2]),
+        last_hidden_state_array.as_slice().unwrap(),
+    )?
+    .into_owned()
+    .into_dimensionality()?;
 
-        // Convert to Array3 before dropping session
-        Array3::from_shape_vec(
-            (shape.as_ref()[0] as usize, shape.as_ref()[1] as usize, shape.as_ref()[2] as usize),
-            data.to_vec(),
-        )?
-    };
-
-    // Recreate attention mask for pooling
-    let attention_mask_pooling = Array2::from_shape_vec((batch_size, max_len), attention_mask_vec)?;
-    let attention_mask_f32: Array2<f32> = attention_mask_pooling.mapv(|x| x as f32);
+    // Mean pooling
+    let attention_mask_f32: Array2<f32> = attention_mask.mapv(|x| x as f32);
     let attention_mask_expanded = attention_mask_f32.insert_axis(Axis(2));
+
+    let last_hidden_state_3d = last_hidden_state_nd.into_shape((batch_size, max_len, shape[2]))?;
 
     let sum_embeddings = (&last_hidden_state_3d * &attention_mask_expanded)
         .sum_axis(Axis(1));
 
     let sum_mask = attention_mask_expanded
         .sum_axis(Axis(1))
-        .mapv(|x: f32| x.max(1e-9));
+        .mapv(|x| x.max(1e-9));
 
     let mut embeddings = sum_embeddings / sum_mask;
 
     // L2 normalization
     for mut row in embeddings.axis_iter_mut(Axis(0)) {
-        let norm: f32 = row.mapv(|x: f32| x * x).sum().sqrt().max(1e-9);
+        let norm = row.mapv(|x| x * x).sum().sqrt().max(1e-9);
         row /= norm;
     }
 
@@ -308,7 +287,7 @@ async fn embed(
     // Convert to Vec<Vec<f32>>
     let embeddings_vec: Vec<Vec<f32>> = embeddings
         .axis_iter(Axis(0))
-        .map(|row: ndarray::ArrayView1<f32>| row.to_vec())
+        .map(|row| row.to_vec())
         .collect();
 
     Ok(Json(EmbedResponse {
