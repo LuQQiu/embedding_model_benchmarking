@@ -26,3 +26,6 @@ statrs = { workspace = true }
 
 # Concurrency
 rayon = "1.10"
+
+# Time
+chrono = { workspace = true }
