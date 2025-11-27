@@ -9,11 +9,11 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Download ONNX Runtime binaries
+# Download ONNX Runtime binaries (v1.22.x for ort 2.0.0-rc.10 compatibility)
 WORKDIR /tmp
-RUN curl -LO https://github.com/microsoft/onnxruntime/releases/download/v1.19.2/onnxruntime-linux-x64-1.19.2.tgz && \
-    tar xzf onnxruntime-linux-x64-1.19.2.tgz && \
-    mv onnxruntime-linux-x64-1.19.2 /onnxruntime
+RUN curl -LO https://github.com/microsoft/onnxruntime/releases/download/v1.22.0/onnxruntime-linux-x64-1.22.0.tgz && \
+    tar xzf onnxruntime-linux-x64-1.22.0.tgz && \
+    mv onnxruntime-linux-x64-1.22.0 /onnxruntime
 
 # Set ONNX Runtime environment variables for build
 ENV ORT_DYLIB_PATH=/onnxruntime/lib
