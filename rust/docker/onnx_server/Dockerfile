@@ -47,6 +47,9 @@ COPY --from=builder /build/target/release/onnx_server /usr/local/bin/
 # Update library cache
 RUN ldconfig
 
+# Set library path for runtime
+ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+
 # Create working directory
 WORKDIR /app
 
