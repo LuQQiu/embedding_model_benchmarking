@@ -47,5 +47,8 @@ indicatif = "0.17"
 # Statistics
 statrs = "0.17"
 
+# Time
+chrono = "0.4"
+
 # Environment
 dotenvy = "0.15"
