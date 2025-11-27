@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use statrs::statistics::{Data, OrderStatistics, Statistics as StatrsStats};
+use statrs::statistics::{Data, Distribution, Max, Min, OrderStatistics, Statistics as StatrsStats};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Statistics {
