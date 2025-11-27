@@ -21,10 +21,20 @@ provider "aws" {
   }
 }
 
+# SSH key pair
+resource "aws_key_pair" "rust_benchmark_key" {
+  key_name   = "rust-benchmark-key"
+  public_key = file("~/.ssh/id_rsa.pub")
+
+  tags = {
+    Name = "rust-benchmark-key"
+  }
+}
+
 # Security Group
 resource "aws_security_group" "rust_benchmark_sg" {
-  name_description = "Security group for Rust benchmark instance"
-  description     = "Allow SSH and HTTP inbound traffic"
+  name        = "rust-benchmark-sg"
+  description = "Allow SSH and HTTP inbound traffic"
 
   # SSH
   ingress {
@@ -63,7 +73,7 @@ resource "aws_instance" "rust_benchmark" {
   ami           = var.ami_id
   instance_type = var.instance_type
 
-  key_name               = var.key_name
+  key_name               = aws_key_pair.rust_benchmark_key.key_name
   vpc_security_group_ids = [aws_security_group.rust_benchmark_sg.id]
 
   root_block_device {

@@ -25,8 +25,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '16'
-          memory: 32G
+          cpus: '32'
+          memory: 64G
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 5s
@@ -57,8 +57,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '14'
-          memory: 16G
+          cpus: '28'
+          memory: 48G
 
 networks:
   onnx-rust-net:

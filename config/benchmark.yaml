@@ -32,12 +32,6 @@ scenarios:
     batch_size: 1
     description: "Concurrency 1 - baseline single-threaded performance"
 
-  - name: "concurrency_2"
-    concurrency: 2
-    num_requests: 2000
-    batch_size: 1
-    description: "Concurrency 2"
-
   - name: "concurrency_4"
     concurrency: 4
     num_requests: 5000
@@ -50,17 +44,17 @@ scenarios:
     batch_size: 1
     description: "Concurrency 8"
 
-  - name: "concurrency_12"
-    concurrency: 12
-    num_requests: 10000
-    batch_size: 1
-    description: "Concurrency 12"
-
   - name: "concurrency_16"
     concurrency: 16
     num_requests: 12000
     batch_size: 1
-    description: "Concurrency 16 - full load test"
+    description: "Concurrency 16"
+
+  - name: "concurrency_32"
+    concurrency: 32
+    num_requests: 16000
+    batch_size: 1
+    description: "Concurrency 32 - high load test"
 
 # Metrics to collect
 metrics:

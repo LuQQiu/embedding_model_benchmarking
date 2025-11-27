@@ -15,7 +15,7 @@ variable "ami_id" {
 variable "instance_type" {
   description = "EC2 instance type"
   type        = string
-  default     = "c7i.4xlarge"  # 16 vCPUs, 32 GB RAM, Intel Sapphire Rapids
+  default     = "c7i.16xlarge"  # 64 vCPUs, 128 GB RAM, Intel Sapphire Rapids
 }
 
 variable "key_name" {
@@ -33,5 +33,5 @@ variable "allowed_ssh_cidr" {
 variable "root_volume_size" {
   description = "Root volume size in GB"
   type        = number
-  default     = 100
+  default     = 200
 }

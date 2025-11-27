@@ -331,7 +331,9 @@ class BenchmarkOrchestrator:
         """
         Export benchmark results to CSV format
 
-        CSV columns: timestamp, model, runtime, language, concurrency, qps, p50_latency_ms, p90_latency_ms, p95_latency_ms, p99_latency_ms
+        CSV columns: timestamp, model, runtime, language, concurrency, qps, p50_latency_ms, p90_latency_ms,
+                     p95_latency_ms, p99_latency_ms, server_cpu_percent, server_memory_mb,
+                     client_cpu_percent, client_memory_mb
 
         Args:
             output_file: Path to output CSV file (default: results/{model}/benchmark_results_{timestamp}.csv)
@@ -371,6 +373,11 @@ class BenchmarkOrchestrator:
 
             runtime, language = runtime_map.get(framework, (framework, 'Unknown'))
 
+            # Extract server resource info (from final_server_info)
+            final_server_info = data.get('final_server_info', {})
+            server_cpu_percent = final_server_info.get('cpu_percent', 0)
+            server_memory_mb = final_server_info.get('memory_rss_mb', 0)
+
             # Extract scenarios
             scenarios = data.get('scenarios', {})
 
@@ -384,6 +391,10 @@ class BenchmarkOrchestrator:
                 p95 = latency.get('p95', 0)
                 p99 = latency.get('p99', 0)
 
+                # Client resource usage (per scenario)
+                client_cpu_percent = scenario_data.get('cpu_percent', 0)
+                client_memory_mb = scenario_data.get('memory_rss_mb', 0)
+
                 csv_rows.append({
                     'timestamp': timestamp,
                     'model': self.model_name,
@@ -394,13 +405,18 @@ class BenchmarkOrchestrator:
                     'p50_latency_ms': f"{p50:.2f}",
                     'p90_latency_ms': f"{p90:.2f}",
                     'p95_latency_ms': f"{p95:.2f}",
-                    'p99_latency_ms': f"{p99:.2f}"
+                    'p99_latency_ms': f"{p99:.2f}",
+                    'server_cpu_percent': f"{server_cpu_percent:.1f}",
+                    'server_memory_mb': f"{server_memory_mb:.1f}",
+                    'client_cpu_percent': f"{client_cpu_percent:.1f}",
+                    'client_memory_mb': f"{client_memory_mb:.1f}"
                 })
 
         # Write CSV
         fieldnames = [
             'timestamp', 'model', 'runtime', 'language', 'concurrency',
-            'qps', 'p50_latency_ms', 'p90_latency_ms', 'p95_latency_ms', 'p99_latency_ms'
+            'qps', 'p50_latency_ms', 'p90_latency_ms', 'p95_latency_ms', 'p99_latency_ms',
+            'server_cpu_percent', 'server_memory_mb', 'client_cpu_percent', 'client_memory_mb'
         ]
 
         with open(output_file, 'w', newline='') as f:
