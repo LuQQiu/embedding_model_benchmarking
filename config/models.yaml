@@ -107,6 +107,7 @@ models:
 
     paths:
       pytorch: "/models/siglip/pytorch"
+      onnx: "/models/siglip/onnx/text_encoder.onnx"  # Default to text encoder for compatibility
       onnx_text: "/models/siglip/onnx/text_encoder.onnx"
       onnx_image: "/models/siglip/onnx/image_encoder.onnx"
       openvino_text: "/models/siglip/openvino/text"
