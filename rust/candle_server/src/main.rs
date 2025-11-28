@@ -124,7 +124,8 @@ async fn main() -> Result<()> {
     info!("✓ Weights loaded");
 
     // Create model (use_flash_attn=false for CPU inference)
-    let model = Model::new(false, &config, vb)?;
+    // Note: Our PyTorch checkpoint doesn't have "model." prefix, so we don't use .pp("model")
+    let model = Model::new_no_prefix(false, &config, &vb)?;
     info!("✓ Model created");
 
     // Load tokenizer
