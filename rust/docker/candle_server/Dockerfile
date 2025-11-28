@@ -1,5 +1,5 @@
 # Multi-stage build for Candle Rust server
-FROM rustlang/rust:nightly-slim AS builder
+FROM rust:1.83-slim AS builder
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
@@ -21,7 +21,7 @@ COPY rust/benchmark_client ./benchmark_client
 RUN cargo build --release -p candle_server
 
 # Runtime stage
-FROM debian:bookworm-slim
+FROM rust:1.83-slim
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y \
