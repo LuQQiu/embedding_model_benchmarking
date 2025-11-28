@@ -60,6 +60,64 @@ services:
           cpus: '28'
           memory: 48G
 
+  # ============================================================================
+  # Candle Rust Server
+  # ============================================================================
+  candle-rust-server:
+    build:
+      context: ..
+      dockerfile: rust/docker/candle_server/Dockerfile
+    container_name: candle-rust-server
+    volumes:
+      - ../models:/models:ro
+      - ../config:/config:ro
+    environment:
+      - MODEL_NAME=${MODEL_NAME:-embeddinggemma-300m}
+      - RUST_LOG=info
+    ports:
+      - "8001:8000"
+    networks:
+      - candle-rust-net
+    deploy:
+      resources:
+        limits:
+          cpus: '32'
+          memory: 64G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 30s
+
+  # ============================================================================
+  # Benchmark Client for Candle (Python - reuse existing)
+  # ============================================================================
+  candle-rust-client:
+    build:
+      context: ..
+      dockerfile: docker/benchmark_client/Dockerfile
+    container_name: candle-rust-client
+    volumes:
+      - ../results:/results
+      - ../config:/config:ro
+    environment:
+      - FRAMEWORK=candle-rust
+      - MODEL_NAME=${MODEL_NAME:-embeddinggemma-300m}
+      - SERVER_URL=http://candle-rust-server:8000
+    depends_on:
+      candle-rust-server:
+        condition: service_healthy
+    networks:
+      - candle-rust-net
+    deploy:
+      resources:
+        limits:
+          cpus: '28'
+          memory: 48G
+
 networks:
   onnx-rust-net:
+    driver: bridge
+  candle-rust-net:
     driver: bridge
