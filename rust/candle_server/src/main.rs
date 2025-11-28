@@ -103,12 +103,13 @@ async fn main() -> Result<()> {
     info!("Using device: {:?}", device);
 
     // Load model from local files
+    //  Candle version uses model_candle.safetensors which has "model." prefix on all tensors
     let model_dir = format!("/models/{}/pytorch", model_name);
     info!("Loading model from: {}", model_dir);
 
     let config_filename = format!("{}/config.json", model_dir);
     let tokenizer_filename = format!("{}/tokenizer.json", model_dir);
-    let weights_filename = format!("{}/model.safetensors", model_dir);
+    let weights_filename = format!("{}/model_candle.safetensors", model_dir);
 
     info!("✓ Model file paths resolved");
 
@@ -124,8 +125,10 @@ async fn main() -> Result<()> {
     info!("✓ Weights loaded");
 
     // Create model (use_flash_attn=false for CPU inference)
-    // Note: Our PyTorch checkpoint doesn't have "model." prefix, so we don't use .pp("model")
-    let model = Model::new_no_prefix(false, &config, &vb)?;
+    // Candle's Model::new() expects to call vb.pp("model"), which would look for tensors
+    // with "model." prefix. Our checkpoint doesn't have this prefix, so we pass the vb
+    // without any prefix and let Model::new add it.
+    let model = Model::new(false, &config, vb)?;
     info!("✓ Model created");
 
     // Load tokenizer
