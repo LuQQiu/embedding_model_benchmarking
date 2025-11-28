@@ -1,0 +1,29 @@
+[package]
+name = "candle_server"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[[bin]]
+name = "candle_server"
+path = "src/main.rs"
+
+[dependencies]
+# Workspace dependencies
+common.workspace = true
+axum.workspace = true
+tokio.workspace = true
+tower-http.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+sysinfo.workspace = true
+tokenizers.workspace = true
+
+# Candle dependencies
+candle-core.workspace = true
+candle-nn.workspace = true
+candle-transformers.workspace = true
+hf-hub.workspace = true
