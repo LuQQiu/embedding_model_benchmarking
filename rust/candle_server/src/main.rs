@@ -25,7 +25,7 @@ use std::{
 use sysinfo::System;
 use tokenizers::Tokenizer;
 use tower_http::trace::TraceLayer;
-use tracing::{error, info};
+use tracing::info;
 
 // Application state
 struct AppState {
@@ -128,8 +128,8 @@ async fn main() -> Result<()> {
     };
     info!("✓ Weights loaded");
 
-    // Create model
-    let model = Model::new(&config, vb)?;
+    // Create model (use_flash_attn=false for CPU inference)
+    let model = Model::new(false, &config, vb)?;
     info!("✓ Model created");
 
     // Load tokenizer
@@ -280,10 +280,10 @@ async fn embed(
     let attention_mask =
         Tensor::from_vec(attention_mask_vec.clone(), (batch_size, max_len), &state.device)?;
 
-    // Run inference
+    // Run inference (seqlen_offset=0 for fresh sequences)
     let token_embeddings = {
         let mut model = state.model.lock().await;
-        model.forward(&input_ids)?
+        model.forward(&input_ids, 0)?
     };
 
     // Mean pooling with attention mask
