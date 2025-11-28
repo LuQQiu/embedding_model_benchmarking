@@ -1,0 +1,171 @@
+{
+  "framework": "onnx-rust",
+  "model_name": "embeddinggemma-300m",
+  "server_url": "http://onnx-rust-server:8000",
+  "first_inference_ms": 15.062531998410122,
+  "server_info": {
+    "framework": "onnx-rust",
+    "model_name": "embeddinggemma-300m",
+    "model_configuration": {
+      "type": "text_embedding",
+      "max_seq_length": 8192,
+      "embedding_dim": 256,
+      "name": "EmbeddingGemma 300M"
+    },
+    "model_load_time_ms": 3998.9954970000003,
+    "total_requests": 0,
+    "runtime_version": "2.0.0-rc.10",
+    "device": "CPU",
+    "cpu_count": 32,
+    "memory_rss_mb": 1952.71484375,
+    "cpu_percent": 3.0657213
+  },
+  "final_server_info": {
+    "framework": "onnx-rust",
+    "model_name": "embeddinggemma-300m",
+    "model_configuration": {
+      "embedding_dim": 256,
+      "name": "EmbeddingGemma 300M",
+      "max_seq_length": 8192,
+      "type": "text_embedding"
+    },
+    "model_load_time_ms": 3998.9954970000003,
+    "total_requests": 42101,
+    "runtime_version": "2.0.0-rc.10",
+    "device": "CPU",
+    "cpu_count": 32,
+    "memory_rss_mb": 1958.71484375,
+    "cpu_percent": 0.18204941
+  },
+  "scenarios": {
+    "concurrency_1": {
+      "scenario_name": "concurrency_1",
+      "concurrency": 1,
+      "num_requests": 1000,
+      "batch_size": 1,
+      "latency_ms": {
+        "mean": 14.789775860077498,
+        "median": 14.904642501278431,
+        "p90": 15.86739940175903,
+        "p95": 16.474542699870653,
+        "p99": 17.227803810419573,
+        "p999": 17.481850809417722,
+        "min": 12.913988997752313,
+        "max": 18.118023999704747,
+        "stddev": 0.8945772913522998
+      },
+      "throughput_qps": 67.49717582096729,
+      "total_duration_sec": 14.815434688000096,
+      "server_cpu_percent": 3188.3115,
+      "server_memory_mb": 1954.71484375,
+      "client_cpu_percent": 8.6,
+      "client_memory_mb": 47.5,
+      "errors": 0,
+      "error_rate": 0.0
+    },
+    "concurrency_4": {
+      "scenario_name": "concurrency_4",
+      "concurrency": 4,
+      "num_requests": 5000,
+      "batch_size": 1,
+      "latency_ms": {
+        "mean": 55.683786480990236,
+        "median": 56.33622000095784,
+        "p90": 58.61116439955367,
+        "p95": 59.09904270138213,
+        "p99": 59.97666748076882,
+        "p999": 61.04503067844417,
+        "min": 38.31707899735193,
+        "max": 80.92653000130667,
+        "stddev": 2.4960545361699125
+      },
+      "throughput_qps": 71.76494164109546,
+      "total_duration_sec": 69.67190226399907,
+      "server_cpu_percent": 3198.9307,
+      "server_memory_mb": 1955.71484375,
+      "client_cpu_percent": 10.3,
+      "client_memory_mb": 57.0,
+      "errors": 0,
+      "error_rate": 0.0
+    },
+    "concurrency_8": {
+      "scenario_name": "concurrency_8",
+      "concurrency": 8,
+      "num_requests": 8000,
+      "batch_size": 1,
+      "latency_ms": {
+        "mean": 111.10616277088548,
+        "median": 112.6319449977018,
+        "p90": 116.63375679927412,
+        "p95": 117.37552699887601,
+        "p99": 118.8114270600272,
+        "p999": 120.55445581292227,
+        "min": 48.3431480024592,
+        "max": 129.76367699957336,
+        "stddev": 5.21049610945267
+      },
+      "throughput_qps": 71.94710207464362,
+      "total_duration_sec": 111.192803730999,
+      "server_cpu_percent": 3199.0378,
+      "server_memory_mb": 1957.21484375,
+      "client_cpu_percent": 10.4,
+      "client_memory_mb": 63.5,
+      "errors": 0,
+      "error_rate": 0.0
+    },
+    "concurrency_16": {
+      "scenario_name": "concurrency_16",
+      "concurrency": 16,
+      "num_requests": 12000,
+      "batch_size": 1,
+      "latency_ms": {
+        "mean": 218.48409604867936,
+        "median": 221.75378450083372,
+        "p90": 230.489810301151,
+        "p95": 232.63591189970612,
+        "p99": 236.42330591985228,
+        "p999": 239.8402127814443,
+        "min": 35.26623799916706,
+        "max": 274.2831789983029,
+        "stddev": 10.626938287990082
+      },
+      "throughput_qps": 73.17077687153332,
+      "total_duration_sec": 163.99989877199914,
+      "server_cpu_percent": 3199.0334,
+      "server_memory_mb": 1957.21484375,
+      "client_cpu_percent": 10.8,
+      "client_memory_mb": 71.01953125,
+      "errors": 0,
+      "error_rate": 0.0
+    },
+    "concurrency_32": {
+      "scenario_name": "concurrency_32",
+      "concurrency": 32,
+      "num_requests": 16000,
+      "batch_size": 1,
+      "latency_ms": {
+        "mean": 449.9162702228341,
+        "median": 452.8736640004354,
+        "p90": 460.34888259891886,
+        "p95": 462.40512954937003,
+        "p99": 466.2307093488562,
+        "p999": 470.2505356690966,
+        "min": 18.29175300008501,
+        "max": 544.3245690003096,
+        "stddev": 16.009989351874534
+      },
+      "throughput_qps": 71.04685442654491,
+      "total_duration_sec": 225.20349604699732,
+      "server_cpu_percent": 3199.043,
+      "server_memory_mb": 1958.71484375,
+      "client_cpu_percent": 10.4,
+      "client_memory_mb": 80.046875,
+      "errors": 0,
+      "error_rate": 0.0
+    }
+  },
+  "client_info": {
+    "cpu_count": 64,
+    "python_version": "3.11.14"
+  }
+}

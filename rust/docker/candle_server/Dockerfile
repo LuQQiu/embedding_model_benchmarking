@@ -14,6 +14,7 @@ WORKDIR /build
 COPY rust/Cargo.toml rust/Cargo.lock* ./
 COPY rust/common ./common
 COPY rust/candle_server ./candle_server
+COPY rust/onnx_server ./onnx_server
 COPY rust/benchmark_client ./benchmark_client
 
 # Build release binary
