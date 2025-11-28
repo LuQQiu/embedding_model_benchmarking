@@ -26,4 +26,3 @@ tokenizers.workspace = true
 candle-core.workspace = true
 candle-nn.workspace = true
 candle-transformers.workspace = true
-hf-hub.workspace = true

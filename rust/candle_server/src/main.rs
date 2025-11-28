@@ -12,7 +12,6 @@ use candle_transformers::models::gemma::{Config, Model};
 use common::{
     config::ModelsConfig, EmbedRequest, EmbedResponse, HealthResponse, InfoResponse, ModelConfig,
 };
-use hf_hub::{api::sync::Api, Repo, RepoType};
 use serde_json::json;
 use std::{
     collections::HashMap,
@@ -103,19 +102,15 @@ async fn main() -> Result<()> {
     let device = Device::Cpu;
     info!("Using device: {:?}", device);
 
-    // Download model from HuggingFace Hub
-    let api = Api::new()?;
-    let repo = api.repo(Repo::new(
-        model_config.huggingface_id.clone(),
-        RepoType::Model,
-    ));
+    // Load model from local files
+    let model_dir = format!("/models/{}/pytorch", model_name);
+    info!("Loading model from: {}", model_dir);
 
-    info!("Downloading model files from HuggingFace Hub...");
-    let config_filename = repo.get("config.json")?;
-    let tokenizer_filename = repo.get("tokenizer.json")?;
-    let weights_filename = repo.get("model.safetensors")?;
+    let config_filename = format!("{}/config.json", model_dir);
+    let tokenizer_filename = format!("{}/tokenizer.json", model_dir);
+    let weights_filename = format!("{}/model.safetensors", model_dir);
 
-    info!("✓ Model files downloaded");
+    info!("✓ Model file paths resolved");
 
     // Load config
     let config_content = std::fs::read_to_string(config_filename)?;
