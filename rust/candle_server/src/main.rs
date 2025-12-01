@@ -114,9 +114,11 @@ async fn main() -> Result<()> {
 
     let max_seq_length = model_config.max_seq_length;
 
-    // Determine number of model instances (one per CPU core)
-    let num_workers = std::thread::available_parallelism()
-        .map(|n| n.get())
+    // Determine number of model instances
+    // Limit to 4 to avoid excessive memory usage (each model ~1GB)
+    let num_workers = std::env::var("NUM_MODEL_INSTANCES")
+        .ok()
+        .and_then(|s| s.parse().ok())
         .unwrap_or(4);
     info!("Creating {} model instances for concurrent inference", num_workers);
 
