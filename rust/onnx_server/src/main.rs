@@ -10,11 +10,16 @@ use common::{
     config::ModelsConfig, EmbedRequest, EmbedResponse, HealthResponse, InfoResponse, ModelConfig,
 };
 use ndarray::{Array2, Array3, Axis};
-use ort::{session::builder::GraphOptimizationLevel, session::Session, value::Value};
+use ort::{
+    execution_providers::OneDNNExecutionProvider,
+    session::builder::GraphOptimizationLevel,
+    session::Session,
+    value::Value,
+};
 use serde_json::json;
 use std::{
     collections::HashMap,
-    sync::{Arc, atomic::{AtomicU64, Ordering}},
+    sync::{Arc, atomic::{AtomicU64, AtomicUsize, Ordering}},
     time::Instant,
 };
 use sysinfo::System;
@@ -22,10 +27,36 @@ use tokenizers::Tokenizer;
 use tower_http::trace::TraceLayer;
 use tracing::{info, error};
 
+// Session pool for concurrent inference with improved scheduling
+struct SessionPool {
+    sessions: Vec<tokio::sync::Mutex<Session>>,  // Use async mutex
+    pool_size: usize,
+    round_robin_counter: AtomicUsize,  // For better load distribution
+}
+
+impl SessionPool {
+    fn new(sessions: Vec<Session>) -> Self {
+        let pool_size = sessions.len();
+        let sessions = sessions.into_iter().map(tokio::sync::Mutex::new).collect();
+        Self {
+            sessions,
+            pool_size,
+            round_robin_counter: AtomicUsize::new(0),
+        }
+    }
+
+    // Optimized acquisition with true round-robin and minimal contention
+    async fn acquire(&self) -> tokio::sync::MutexGuard<'_, Session> {
+        // Simple round-robin without try_lock overhead
+        let idx = self.round_robin_counter.fetch_add(1, Ordering::Relaxed) % self.pool_size;
+        self.sessions[idx].lock().await
+    }
+}
+
 // Application state
 struct AppState {
-    session: tokio::sync::Mutex<Session>,
-    tokenizer: Tokenizer,
+    session_pool: Arc<SessionPool>,  // Pool of sessions for concurrent inference
+    tokenizer: Arc<Tokenizer>,  // Tokenizer is thread-safe, only needs Arc
     model_config: ModelConfig,
     model_load_time_ms: f64,
     total_requests: AtomicU64,
@@ -107,19 +138,38 @@ async fn main() -> Result<()> {
         return Err(anyhow::anyhow!("Model file not found"));
     }
 
-    // Create ONNX Runtime session
+    // Create ONNX Runtime session pool for concurrent inference
     let cpu_count = std::thread::available_parallelism()
         .map(|n| n.get())
         .unwrap_or(1);
     info!("CPU count: {}", cpu_count);
 
-    let session = Session::builder()?
-        .with_optimization_level(GraphOptimizationLevel::Level3)?
-        .with_intra_threads(cpu_count)?
-        .with_inter_threads(cpu_count)?
-        .commit_from_file(onnx_path)?;
+    // Create multiple sessions for concurrent inference
+    // Use pool_size from env or default to 4
+    let pool_size = std::env::var("POOL_SIZE")
+        .ok()
+        .and_then(|s| s.parse::<usize>().ok())
+        .unwrap_or(4);
 
-    info!("✓ ONNX session created");
+    let threads_per_session = cpu_count / pool_size;
+    info!("Creating session pool: {} sessions with {} threads each", pool_size, threads_per_session);
+
+    let mut sessions = Vec::with_capacity(pool_size);
+    for i in 0..pool_size {
+        let session = Session::builder()?
+            .with_execution_providers([
+                OneDNNExecutionProvider::default().build()
+            ])?
+            .with_optimization_level(GraphOptimizationLevel::Level3)?
+            .with_intra_threads(threads_per_session)?
+            .with_inter_threads(1)?  // Only 1 inter-thread since we have multiple sessions
+            .commit_from_file(onnx_path)?;
+        sessions.push(session);
+        info!("  ✓ Session {} created with oneDNN", i + 1);
+    }
+
+    let session_pool = SessionPool::new(sessions);
+    info!("✓ Session pool created with {} sessions", pool_size);
 
     // Load tokenizer
     let tokenizer_path = std::path::Path::new(onnx_path).parent().unwrap();
@@ -133,14 +183,16 @@ async fn main() -> Result<()> {
     info!("✓ Model loaded in {:.2}ms", model_load_time_ms);
     info!("  ONNX Runtime version: 2.0.0-rc.10");
     info!("  CPU count: {}", cpu_count);
+    info!("  Pool size: {} sessions", pool_size);
+    info!("  Threads per session: {}", threads_per_session);
     info!("");
     info!("Server ready on http://0.0.0.0:8000");
     info!("======================================================================");
 
     // Create application state
     let state = Arc::new(AppState {
-        session: tokio::sync::Mutex::new(session),
-        tokenizer,
+        session_pool: Arc::new(session_pool),
+        tokenizer: Arc::new(tokenizer),
         model_config,
         model_load_time_ms,
         total_requests: AtomicU64::new(0),
@@ -209,7 +261,7 @@ async fn info_handler(State(state): State<Arc<AppState>>) -> Result<Json<InfoRes
         model_load_time_ms: state.model_load_time_ms,
         total_requests: state.total_requests.load(Ordering::Relaxed),
         runtime_version: "2.0.0-rc.10".to_string(),
-        device: "CPU".to_string(),
+        device: "CPU (oneDNN)".to_string(),
         cpu_count,
         memory_rss_mb,
         cpu_percent,
@@ -263,8 +315,10 @@ async fn embed(
     let input_ids_value = Value::from_array(input_ids)?;
     let attention_mask_value = Value::from_array(attention_mask)?;
 
+    // Acquire a session from the pool and run inference
     let last_hidden_state_3d = {
-        let mut session = state.session.lock().await;
+        let mut session = state.session_pool.acquire().await;
+
         let outputs = session.run(ort::inputs![
             "input_ids" => input_ids_value,
             "attention_mask" => attention_mask_value,
@@ -273,7 +327,7 @@ async fn embed(
         // Get token embeddings - ORT 2.0 RC returns tuple (shape, data)
         let (shape, data) = outputs["token_embeddings"].try_extract_tensor::<f32>()?;
 
-        // Convert to Array3 before dropping session
+        // Convert to Array3 before dropping lock
         Array3::from_shape_vec(
             (shape.as_ref()[0] as usize, shape.as_ref()[1] as usize, shape.as_ref()[2] as usize),
             data.to_vec(),

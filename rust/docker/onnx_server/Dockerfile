@@ -25,6 +25,7 @@ COPY rust/Cargo.toml rust/Cargo.lock* ./
 COPY rust/common ./common
 COPY rust/onnx_server ./onnx_server
 COPY rust/benchmark_client ./benchmark_client
+COPY rust/candle_server ./candle_server
 
 # Build release binary
 RUN cargo build --release -p onnx_server
