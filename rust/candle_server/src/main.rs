@@ -244,6 +244,9 @@ async fn embed(
 
     let start_time = Instant::now();
 
+    // Log the request for debugging
+    tracing::debug!("Embedding request for {} texts", request.texts.len());
+
     // Tokenize
     let encodings = state
         .tokenizer
@@ -282,7 +285,13 @@ async fn embed(
     // Run inference (seqlen_offset=0 for fresh sequences)
     let token_embeddings = {
         let mut model = state.model.lock().await;
-        model.forward(&input_ids, 0)?
+        match model.forward(&input_ids, 0) {
+            Ok(embeddings) => embeddings,
+            Err(e) => {
+                tracing::error!("Model forward pass failed: {:?}", e);
+                return Err(AppError::Internal(format!("Model forward pass failed: {:?}", e)));
+            }
+        }
     };
 
     // Mean pooling with attention mask
