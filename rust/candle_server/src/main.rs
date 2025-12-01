@@ -26,9 +26,29 @@ use tokenizers::Tokenizer;
 use tower_http::trace::TraceLayer;
 use tracing::info;
 
+// Model pool for concurrent inference
+struct ModelPool {
+    models: Vec<Arc<tokio::sync::Mutex<Model>>>,
+    next_idx: AtomicU64,
+}
+
+impl ModelPool {
+    fn new(models: Vec<Model>) -> Self {
+        Self {
+            models: models.into_iter().map(|m| Arc::new(tokio::sync::Mutex::new(m))).collect(),
+            next_idx: AtomicU64::new(0),
+        }
+    }
+
+    fn get_model(&self) -> Arc<tokio::sync::Mutex<Model>> {
+        let idx = self.next_idx.fetch_add(1, Ordering::Relaxed) as usize % self.models.len();
+        self.models[idx].clone()
+    }
+}
+
 // Application state
 struct AppState {
-    model: Arc<tokio::sync::Mutex<Model>>,
+    model_pool: Arc<ModelPool>,
     tokenizer: Tokenizer,
     device: Device,
     model_config: ModelConfig,
@@ -94,6 +114,12 @@ async fn main() -> Result<()> {
 
     let max_seq_length = model_config.max_seq_length;
 
+    // Determine number of model instances (one per CPU core)
+    let num_workers = std::thread::available_parallelism()
+        .map(|n| n.get())
+        .unwrap_or(4);
+    info!("Creating {} model instances for concurrent inference", num_workers);
+
     // Load model
     info!("Loading model: {}", model_config.name);
     let start_time = Instant::now();
@@ -114,40 +140,49 @@ async fn main() -> Result<()> {
     info!("✓ Model file paths resolved");
 
     // Load config
-    let config_content = std::fs::read_to_string(config_filename)?;
+    let config_content = std::fs::read_to_string(&config_filename)?;
     let config: Config = serde_json::from_str(&config_content)?;
     info!("✓ Config loaded");
 
-    // Load weights
-    let vb = unsafe {
-        VarBuilder::from_mmaped_safetensors(&[weights_filename], candle_core::DType::F32, &device)?
-    };
-    info!("✓ Weights loaded");
-
-    // Create model (use_flash_attn=false for CPU inference)
-    // Candle's Model::new() expects to call vb.pp("model"), which would look for tensors
-    // with "model." prefix. Our checkpoint doesn't have this prefix, so we pass the vb
-    // without any prefix and let Model::new add it.
-    let model = Model::new(false, &config, vb)?;
-    info!("✓ Model created");
-
     // Load tokenizer
-    let tokenizer = Tokenizer::from_file(tokenizer_filename)
+    let tokenizer = Tokenizer::from_file(&tokenizer_filename)
         .map_err(|e| anyhow::anyhow!("Failed to load tokenizer: {}", e))?;
     info!("✓ Tokenizer loaded");
 
+    // Create multiple model instances
+    let mut models = Vec::new();
+    for i in 0..num_workers {
+        info!("  Loading model instance {}/{}...", i + 1, num_workers);
+
+        // Load weights for this instance
+        let vb = unsafe {
+            VarBuilder::from_mmaped_safetensors(
+                &[weights_filename.clone()],
+                candle_core::DType::F32,
+                &device
+            )?
+        };
+
+        // Create model (use_flash_attn=false for CPU inference)
+        let model = Model::new(false, &config, vb)?;
+        models.push(model);
+    }
+
     let model_load_time_ms = start_time.elapsed().as_secs_f64() * 1000.0;
 
-    info!("✓ Model loaded in {:.2}ms", model_load_time_ms);
+    info!("✓ {} model instances loaded in {:.2}ms", num_workers, model_load_time_ms);
     info!("  Candle version: 0.8");
     info!("  Device: {:?}", device);
     info!("");
     info!("Server ready on http://0.0.0.0:8000");
     info!("======================================================================");
 
+    // Create model pool
+    let model_pool = Arc::new(ModelPool::new(models));
+
     // Create application state
     let state = Arc::new(AppState {
-        model: Arc::new(tokio::sync::Mutex::new(model)),
+        model_pool,
         tokenizer,
         device,
         model_config,
@@ -282,9 +317,12 @@ async fn embed(
     let attention_mask =
         Tensor::from_vec(attention_mask_vec.clone(), (batch_size, max_len), &state.device)?;
 
+    // Get a model from the pool for this request
+    let model = state.model_pool.get_model();
+
     // Run inference (seqlen_offset=0 for fresh sequences)
     let token_embeddings = {
-        let mut model = state.model.lock().await;
+        let mut model = model.lock().await;
         match model.forward(&input_ids, 0) {
             Ok(embeddings) => embeddings,
             Err(e) => {
