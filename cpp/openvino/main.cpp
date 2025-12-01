@@ -19,6 +19,9 @@
 #include <sstream>
 #include <algorithm>
 #include <numeric>
+#include <queue>
+#include <mutex>
+#include <condition_variable>
 
 // OpenVINO
 #include <openvino/openvino.hpp>
@@ -39,18 +42,52 @@
 using json = nlohmann::json;
 using namespace std;
 
+// Inference request pool for thread-safe concurrent inference
+class InferRequestPool {
+private:
+    vector<ov::InferRequest> pool;
+    queue<size_t> available;
+    mutex mtx;
+    condition_variable cv;
+
+public:
+    InferRequestPool(ov::CompiledModel& compiled_model, size_t pool_size) {
+        for (size_t i = 0; i < pool_size; i++) {
+            pool.push_back(compiled_model.create_infer_request());
+            available.push(i);
+        }
+    }
+
+    // Acquire an inference request from the pool
+    pair<ov::InferRequest&, size_t> acquire() {
+        unique_lock<mutex> lock(mtx);
+        cv.wait(lock, [this] { return !available.empty(); });
+        size_t idx = available.front();
+        available.pop();
+        return {pool[idx], idx};
+    }
+
+    // Release an inference request back to the pool
+    void release(size_t idx) {
+        lock_guard<mutex> lock(mtx);
+        available.push(idx);
+        cv.notify_one();
+    }
+};
+
 // Global state
 struct ServerState {
     ov::Core core;
     shared_ptr<ov::Model> model;
     ov::CompiledModel compiled_model;
-    ov::InferRequest infer_request;
+    unique_ptr<InferRequestPool> infer_pool;
     unique_ptr<tokenizers::Tokenizer> tokenizer;
 
     string model_name;
     string model_path;
     int max_seq_length;
     int embedding_dim;
+    size_t pool_size;
 
     double model_load_time_ms;
     atomic<uint64_t> total_requests{0};
@@ -149,10 +186,11 @@ void init_openvino() {
     // Compile model for CPU
     state.compiled_model = state.core.compile_model(state.model, "CPU");
 
-    // Create inference request
-    state.infer_request = state.compiled_model.create_infer_request();
+    // Create inference request pool (size = CPU count for optimal parallelism)
+    state.pool_size = min(static_cast<size_t>(thread::hardware_concurrency()), static_cast<size_t>(64));
+    state.infer_pool = make_unique<InferRequestPool>(state.compiled_model, state.pool_size);
 
-    cout << "✓ OpenVINO model compiled" << endl;
+    cout << "✓ OpenVINO model compiled (inference pool size: " << state.pool_size << ")" << endl;
 
     // Load tokenizer
     string tokenizer_path = state.model_path;
@@ -261,20 +299,23 @@ void handle_embed(const httplib::Request& req, httplib::Response& res) {
             }
         }
 
+        // Acquire an inference request from the pool
+        auto [infer_request, pool_idx] = state.infer_pool->acquire();
+
         // Create OpenVINO tensors
         ov::Shape input_shape = {batch_size, max_len};
         ov::Tensor input_ids_tensor(ov::element::i64, input_shape, input_ids_vec.data());
         ov::Tensor attention_mask_tensor(ov::element::i64, input_shape, attention_mask_vec.data());
 
         // Set input tensors
-        state.infer_request.set_tensor("input_ids", input_ids_tensor);
-        state.infer_request.set_tensor("attention_mask", attention_mask_tensor);
+        infer_request.set_tensor("input_ids", input_ids_tensor);
+        infer_request.set_tensor("attention_mask", attention_mask_tensor);
 
         // Run inference
-        state.infer_request.infer();
+        infer_request.infer();
 
         // Get output
-        ov::Tensor output_tensor = state.infer_request.get_tensor("token_embeddings");
+        ov::Tensor output_tensor = infer_request.get_tensor("token_embeddings");
         float* output_data = output_tensor.data<float>();
         ov::Shape output_shape = output_tensor.get_shape();
 
@@ -294,6 +335,9 @@ void handle_embed(const httplib::Request& req, httplib::Response& res) {
 
         // L2 normalization
         normalize_embeddings(embeddings, batch_size, output_embed_dim);
+
+        // Release inference request back to pool
+        state.infer_pool->release(pool_idx);
 
         auto end = chrono::high_resolution_clock::now();
         double inference_time_ms = chrono::duration<double, milli>(end - start).count();
